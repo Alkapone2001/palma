@@ -56,8 +56,7 @@ export default function RootLayout({ children }) {
             <div>
               <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-stone-950">Hours</h2>
               <div className="mt-5 space-y-3 text-sm">
-                <p className="flex items-center gap-3"><Clock className="h-4 w-4 text-emerald-800" />Mon-Fri: 11am - 10pm</p>
-                <p className="flex items-center gap-3"><Clock className="h-4 w-4 text-emerald-800" />Sat-Sun: 12pm - 11pm</p>
+                <p className="flex items-center gap-3"><Clock className="h-4 w-4 text-emerald-800" />Every day: 08:00 - 00:00</p>
               </div>
             </div>
           </div>

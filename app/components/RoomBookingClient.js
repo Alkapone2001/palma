@@ -340,6 +340,8 @@ function getRoomPrice(room) {
 
 function HotelRoomBookingForm({ room }) {
   const today = new Date().toISOString().slice(0, 10)
+  const [bookedRanges, setBookedRanges] = useState([])
+  const [availabilityLoading, setAvailabilityLoading] = useState(true)
   const [formData, setFormData] = useState({
     type: 'room',
     roomId: room._id,
@@ -355,11 +357,31 @@ function HotelRoomBookingForm({ room }) {
     notes: '',
   })
   const [status, setStatus] = useState('idle')
+  const [message, setMessage] = useState('')
+
+  useEffect(() => {
+    async function fetchAvailability() {
+      setAvailabilityLoading(true)
+
+      try {
+        const response = await fetch(`/api/availability?roomId=${room._id}`)
+        const data = await response.json()
+        setBookedRanges(Array.isArray(data.bookedRanges) ? data.bookedRanges : [])
+      } catch (error) {
+        setBookedRanges([])
+      } finally {
+        setAvailabilityLoading(false)
+      }
+    }
+
+    fetchAvailability()
+  }, [room._id])
 
   const nights = calculateNights(formData.checkIn, formData.checkOut)
   const guestLimitExceeded = Number(formData.guests) > Number(room.capacity || 99)
+  const datesUnavailable = selectedDatesOverlapBookedRange(formData.checkIn, formData.checkOut, bookedRanges)
   const totalEstimate = room.price && nights > 0 ? Number(room.price) * nights : null
-  const canSubmit = nights > 0 && !guestLimitExceeded && status !== 'submitting' && status !== 'success'
+  const canSubmit = nights > 0 && !guestLimitExceeded && !datesUnavailable && status !== 'submitting' && status !== 'success'
 
   const handleChange = (event) => {
     const { name, value } = event.target
@@ -375,6 +397,7 @@ function HotelRoomBookingForm({ room }) {
     event.preventDefault()
     if (!canSubmit) return
     setStatus('submitting')
+    setMessage('')
 
     try {
       const response = await fetch('/api/booking', {
@@ -392,10 +415,15 @@ function HotelRoomBookingForm({ room }) {
         }),
       })
 
-      if (!response.ok) throw new Error('Room booking failed')
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}))
+        throw new Error(data.error || 'Room booking failed')
+      }
       setStatus('success')
+      setMessage('Room request sent. Admin approval is pending.')
     } catch (error) {
       setStatus('error')
+      setMessage(error.message || 'Something went wrong. Please try again.')
     }
   }
 
@@ -418,10 +446,10 @@ function HotelRoomBookingForm({ room }) {
         <form onSubmit={handleSubmit} className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-2xl shadow-stone-200/70 sm:p-8">
           <div className="grid gap-5 md:grid-cols-2">
             <Field icon={CalendarDays} label="Check-in">
-              <input type="date" name="checkIn" value={formData.checkIn} onChange={handleChange} min={today} required className="field-input" />
+              <input type="date" name="checkIn" value={formData.checkIn} onChange={handleChange} min={today} required className="field-input" aria-invalid={datesUnavailable} />
             </Field>
             <Field icon={CalendarDays} label="Check-out">
-              <input type="date" name="checkOut" value={formData.checkOut} onChange={handleChange} min={formData.checkIn || today} required className="field-input" />
+              <input type="date" name="checkOut" value={formData.checkOut} onChange={handleChange} min={formData.checkIn || today} required className="field-input" aria-invalid={datesUnavailable} />
             </Field>
             <Field icon={UsersRound} label="Adults">
               <input type="number" name="adults" value={formData.adults} onChange={handleChange} min="1" max={room.capacity || 20} required className="field-input" />
@@ -445,22 +473,36 @@ function HotelRoomBookingForm({ room }) {
           </div>
 
           <div className="mt-6 rounded-[1.5rem] bg-stone-50 p-5">
-            <div className="grid gap-4 text-sm sm:grid-cols-3">
+            <div className="grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
               <Summary label="Nights" value={nights > 0 ? nights : 'Select dates'} />
               <Summary label="Guests" value={`${formData.guests} / ${room.capacity || 'many'}`} tone={guestLimitExceeded ? 'bad' : 'normal'} />
+              <Summary label="Availability" value={availabilityLoading ? 'Checking...' : datesUnavailable ? 'Booked' : 'Available'} tone={datesUnavailable ? 'bad' : 'normal'} />
               <Summary label="Estimated total" value={totalEstimate ? `EUR ${totalEstimate.toLocaleString()}` : 'After approval'} />
             </div>
             {guestLimitExceeded && <p className="mt-4 text-sm font-medium text-red-700">Guest count is above this room capacity.</p>}
             {formData.checkIn && formData.checkOut && nights <= 0 && <p className="mt-4 text-sm font-medium text-red-700">Check-out must be after check-in.</p>}
-            <p className="mt-4 text-xs leading-5 text-stone-500">This total is an estimate from the nightly room price. Final confirmation is handled by Palma 5 after approval.</p>
+            {datesUnavailable && <p className="mt-4 text-sm font-medium text-red-700">This room already has an approved booking during the selected dates.</p>}
+            {bookedRanges.length > 0 && (
+              <div className="mt-4 rounded-2xl bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Booked dates</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {bookedRanges.slice(0, 6).map((range) => (
+                    <span key={`${range.checkIn}-${range.checkOut}`} className="rounded-full bg-stone-100 px-3 py-1.5 text-xs font-semibold text-stone-700">
+                      {range.checkIn} to {range.checkOut}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <p className="mt-4 text-xs leading-5 text-stone-500">Approved stays are blocked automatically. Pending requests are reviewed by Palma 5 before they become confirmed bookings.</p>
           </div>
 
           <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:items-center">
             <button type="submit" disabled={!canSubmit} className="rounded-full bg-emerald-900 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-70">
               {status === 'submitting' ? 'Sending request...' : status === 'success' ? 'Request sent' : 'Request approval'}
             </button>
-            {status === 'success' && <p className="text-sm font-medium text-emerald-700">Room request sent. Admin approval is pending.</p>}
-            {status === 'error' && <p className="text-sm font-medium text-red-700">Something went wrong. Please try again.</p>}
+            {status === 'success' && <p className="text-sm font-medium text-emerald-700">{message}</p>}
+            {status === 'error' && <p className="text-sm font-medium text-red-700">{message}</p>}
           </div>
         </form>
       </div>
@@ -483,6 +525,14 @@ function calculateNights(checkIn, checkOut) {
   const end = new Date(`${checkOut}T00:00:00`)
   const diff = end.getTime() - start.getTime()
   return diff > 0 ? Math.round(diff / 86400000) : 0
+}
+
+function selectedDatesOverlapBookedRange(checkIn, checkOut, bookedRanges) {
+  if (!checkIn || !checkOut || calculateNights(checkIn, checkOut) <= 0) {
+    return false
+  }
+
+  return bookedRanges.some((range) => checkIn < range.checkOut && checkOut > range.checkIn)
 }
 
 function Field({ icon: Icon, label, children }) {

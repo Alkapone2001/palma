@@ -57,7 +57,7 @@ export default function Home() {
             </div>
             <div className="mt-8 flex flex-wrap gap-3 text-sm text-white/78">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur"><Star className="h-4 w-4 text-amber-200" />Palma 5 signatures</span>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur"><Clock className="h-4 w-4 text-amber-200" />Restaurant open daily</span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur"><Clock className="h-4 w-4 text-amber-200" />Open daily 08:00-00:00</span>
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur"><MapPin className="h-4 w-4 text-amber-200" />Spadici, Porec</span>
             </div>
           </div>
@@ -110,8 +110,8 @@ export default function Home() {
             </div>
             <div className="grid gap-4 sm:col-span-2">
               <div className="rounded-[2rem] bg-emerald-950 p-6 text-white">
-                <p className="text-4xl font-semibold">11-10</p>
-                <p className="mt-2 text-sm uppercase tracking-[0.2em] text-emerald-100">Weekday hours</p>
+                <p className="text-4xl font-semibold">08-00</p>
+                <p className="mt-2 text-sm uppercase tracking-[0.2em] text-emerald-100">Daily hours</p>
               </div>
               <div className="relative h-[280px] overflow-hidden rounded-[2rem] shadow-xl shadow-stone-300/60">
                 <Image src={roomImage} alt="A comfortable hotel room at Palma 5" fill sizes="(min-width: 1024px) 24vw, 100vw" className="object-cover" />

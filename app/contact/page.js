@@ -27,7 +27,7 @@ export default function Contact() {
               <a href="https://www.instagram.com/pizzeria.palma5?igsh=MWs4aHVtd201ZHR4cQ==" target="_blank" rel="noreferrer" className="flex gap-3 hover:text-emerald-900">
                 <Instagram className="mt-1 h-5 w-5 text-emerald-800" />@pizzeria.palma5
               </a>
-              <p className="flex gap-3"><Clock className="mt-1 h-5 w-5 text-emerald-800" />Mon-Fri 11am - 10pm, Sat-Sun 12pm - 11pm</p>
+              <p className="flex gap-3"><Clock className="mt-1 h-5 w-5 text-emerald-800" />Every day: 08:00 - 00:00</p>
             </div>
           </section>
 

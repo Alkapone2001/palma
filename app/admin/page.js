@@ -53,6 +53,11 @@ export default function Admin() {
 
   const recentReservations = reservations.slice(0, 5)
 
+  const handleLogout = async () => {
+    await fetch('/api/admin/logout', { method: 'POST' })
+    window.location.href = '/admin/login'
+  }
+
   return (
     <div className="min-h-screen bg-stone-50">
       <header className="border-b border-stone-200 bg-white">
@@ -66,9 +71,14 @@ export default function Admin() {
               <p className="text-sm text-stone-500">Reservations, rooms, and tables</p>
             </div>
           </div>
-          <Link href="/" className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50">
-            Back to Site
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link href="/" className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50">
+              Back to Site
+            </Link>
+            <button onClick={handleLogout} className="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-800">
+              Sign out
+            </button>
+          </div>
         </div>
       </header>
 
@@ -108,7 +118,8 @@ export default function Admin() {
             <div className="mt-6 space-y-3">
               <AdminAction href="/admin/rooms" icon={DoorOpen} title="Manage hotel rooms" text="Add photos, nightly prices, bed details, and availability." />
               <AdminAction href="/admin/tables" icon={Table2} title="Manage tables" text="Add or remove dining tables and capacities." />
-              <AdminAction href="/admin/reservations" icon={CalendarClock} title="Reservations" text="Review table and room requests from guests." />
+              <AdminAction href="/admin/calendar" icon={CalendarClock} title="Calendar" text="See room occupancy and restaurant reservations by date." />
+              <AdminAction href="/admin/reservations" icon={CalendarClock} title="Reservations" text="Approve, assign tables, and update guest requests." />
             </div>
           </div>
 

@@ -2,22 +2,33 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, CalendarDays, CheckCircle2, DoorOpen, Mail, Phone, Table2, UsersRound, XCircle } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CheckCircle2, DoorOpen, Mail, Pencil, Phone, Table2, UsersRound, XCircle } from 'lucide-react'
+
+const STATUSES = ['pending', 'approved', 'declined', 'cancelled', 'completed', 'no-show']
 
 export default function Reservations() {
   const [reservations, setReservations] = useState([])
+  const [tables, setTables] = useState([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState('all')
+  const [message, setMessage] = useState('')
 
   useEffect(() => {
-    fetchReservations()
+    fetchData()
   }, [])
 
-  const fetchReservations = async () => {
+  const fetchData = async () => {
     try {
-      const response = await fetch('/api/booking')
-      const data = await response.json()
-      setReservations(Array.isArray(data) ? data : [])
+      const [reservationResponse, tableResponse] = await Promise.all([
+        fetch('/api/booking'),
+        fetch('/api/tables'),
+      ])
+      const [reservationData, tableData] = await Promise.all([
+        reservationResponse.json(),
+        tableResponse.json(),
+      ])
+      setReservations(Array.isArray(reservationData) ? reservationData : [])
+      setTables(Array.isArray(tableData) ? tableData : [])
     } finally {
       setLoading(false)
     }
@@ -25,18 +36,24 @@ export default function Reservations() {
 
   const filteredReservations = useMemo(() => {
     if (filter === 'all') return reservations
+    if (STATUSES.includes(filter)) return reservations.filter((reservation) => (reservation.status || 'pending') === filter)
     return reservations.filter((reservation) => reservation.type === filter)
   }, [filter, reservations])
 
-  const updateReservationStatus = async (reservation, status) => {
+  const updateReservation = async (reservation, updateData, successMessage = 'Reservation updated.') => {
+    setMessage('')
     const response = await fetch('/api/booking', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id: reservation._id, status }),
+      body: JSON.stringify({ id: reservation._id, ...updateData }),
     })
 
     if (response.ok) {
-      fetchReservations()
+      await fetchData()
+      setMessage(successMessage)
+    } else {
+      const data = await response.json().catch(() => ({}))
+      setMessage(data.error || 'Reservation could not be updated.')
     }
   }
 
@@ -48,7 +65,10 @@ export default function Reservations() {
             <ArrowLeft className="h-4 w-4" />
             Admin Dashboard
           </Link>
-          <Link href="/" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Back to Site</Link>
+          <div className="flex items-center gap-4">
+            <Link href="/admin/calendar" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Calendar</Link>
+            <Link href="/" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Back to Site</Link>
+          </div>
         </div>
       </header>
 
@@ -57,14 +77,17 @@ export default function Reservations() {
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Reservations</p>
             <h1 className="mt-3 text-4xl font-semibold text-stone-950">Guest requests</h1>
-            <p className="mt-4 max-w-2xl leading-7 text-stone-600">Hotel room requests need admin approval before they are confirmed. Table requests can be approved the same way.</p>
+            <p className="mt-4 max-w-2xl leading-7 text-stone-600">
+              Approve stays, assign restaurant tables, track cancellations, and keep private notes for the team.
+            </p>
+            {message && <p className="mt-4 rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-stone-700 shadow-sm">{message}</p>}
           </div>
-          <div className="flex rounded-full border border-stone-200 bg-white p-1">
-            {['all', 'table', 'room'].map((item) => (
+          <div className="flex max-w-full gap-2 overflow-x-auto rounded-full border border-stone-200 bg-white p-1">
+            {['all', 'table', 'room', 'pending', 'approved', 'cancelled'].map((item) => (
               <button
                 key={item}
                 onClick={() => setFilter(item)}
-                className={`rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${filter === item ? 'bg-emerald-900 text-white' : 'text-stone-600 hover:bg-stone-50'}`}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold capitalize transition ${filter === item ? 'bg-emerald-900 text-white' : 'text-stone-600 hover:bg-stone-50'}`}
               >
                 {item}
               </button>
@@ -82,8 +105,8 @@ export default function Reservations() {
               <ReservationCard
                 key={reservation._id}
                 reservation={reservation}
-                onApprove={() => updateReservationStatus(reservation, 'approved')}
-                onDecline={() => updateReservationStatus(reservation, 'declined')}
+                tables={tables}
+                onUpdate={(updateData, successMessage) => updateReservation(reservation, updateData, successMessage)}
               />
             ))
           )}
@@ -93,9 +116,24 @@ export default function Reservations() {
   )
 }
 
-function ReservationCard({ reservation, onApprove, onDecline }) {
+function ReservationCard({ reservation, tables, onUpdate }) {
   const isRoom = reservation.type === 'room'
   const status = reservation.status || 'pending'
+  const [tableId, setTableId] = useState(reservation.tableId || '')
+  const [adminNotes, setAdminNotes] = useState(reservation.adminNotes || '')
+  const selectedTable = tables.find((table) => String(table._id) === String(tableId))
+
+  const approveReservation = () => {
+    const tableData = !isRoom && selectedTable
+      ? {
+          tableId: String(selectedTable._id),
+          tableName: selectedTable.name,
+          tableSeats: Number(selectedTable.seats || 0),
+        }
+      : {}
+
+    onUpdate({ ...tableData, status: 'approved' }, 'Reservation approved.')
+  }
 
   return (
     <article className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-xl shadow-stone-200/60">
@@ -107,7 +145,7 @@ function ReservationCard({ reservation, onApprove, onDecline }) {
             </div>
             <div>
               <h2 className="text-2xl font-semibold text-stone-950">{reservation.name}</h2>
-              <p className="text-sm font-medium capitalize text-stone-500">{isRoom ? reservation.roomName || 'Hotel room' : 'Table booking'}</p>
+              <p className="text-sm font-medium capitalize text-stone-500">{isRoom ? reservation.roomName || 'Hotel room' : reservation.tableName || 'Table booking'}</p>
             </div>
           </div>
           <div className="mt-5 grid gap-3 text-sm text-stone-700 sm:grid-cols-2 lg:grid-cols-4">
@@ -123,7 +161,7 @@ function ReservationCard({ reservation, onApprove, onDecline }) {
         </div>
       </div>
 
-      {isRoom && (
+      {isRoom ? (
         <div className="mt-6 grid gap-4 rounded-2xl bg-stone-50 p-5 md:grid-cols-4">
           <Detail label="Check-in" value={reservation.checkIn} />
           <Detail label="Check-out" value={reservation.checkOut} />
@@ -131,6 +169,35 @@ function ReservationCard({ reservation, onApprove, onDecline }) {
           <Detail label="Children" value={reservation.children} />
           <Detail label="Nights" value={reservation.nights} />
           <Detail label="Estimated total" value={reservation.estimatedTotal ? `EUR ${Number(reservation.estimatedTotal).toLocaleString()}` : ''} />
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-4 rounded-2xl bg-stone-50 p-5 md:grid-cols-[1fr_auto] md:items-end">
+          <label className="block text-sm font-semibold text-stone-800">
+            Assigned table
+            <select
+              value={tableId}
+              onChange={(event) => setTableId(event.target.value)}
+              className="mt-2 block w-full rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm outline-none focus:border-emerald-900"
+            >
+              <option value="">No exact table selected</option>
+              {tables.map((table) => (
+                <option key={table._id} value={table._id}>
+                  {table.name} - {table.seats} seats
+                </option>
+              ))}
+            </select>
+          </label>
+          <button
+            onClick={() => selectedTable && onUpdate({
+              tableId: String(selectedTable._id),
+              tableName: selectedTable.name,
+              tableSeats: Number(selectedTable.seats || 0),
+            }, 'Table assignment saved.')}
+            disabled={!selectedTable}
+            className="rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Save table
+          </button>
         </div>
       )}
 
@@ -142,20 +209,50 @@ function ReservationCard({ reservation, onApprove, onDecline }) {
 
       {reservation.notes && (
         <div className="mt-4 rounded-2xl border border-stone-100 p-5">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">{isRoom ? 'Event notes' : 'Notes'}</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">{isRoom ? 'Guest requests' : 'Guest notes'}</p>
           <p className="mt-2 leading-7 text-stone-700">{reservation.notes}</p>
         </div>
       )}
 
+      <div className="mt-4 rounded-2xl border border-stone-100 p-5">
+        <label className="block text-sm font-semibold text-stone-800">
+          Private admin notes
+          <textarea
+            value={adminNotes}
+            onChange={(event) => setAdminNotes(event.target.value)}
+            rows="3"
+            className="mt-2 block w-full resize-none rounded-xl border border-stone-200 px-3 py-3 text-sm outline-none focus:border-emerald-900"
+            placeholder="Internal note for staff, visible only in admin."
+          />
+        </label>
+        <button
+          onClick={() => onUpdate({ adminNotes }, 'Admin notes saved.')}
+          className="mt-3 inline-flex items-center gap-2 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50"
+        >
+          <Pencil className="h-4 w-4" />
+          Save notes
+        </button>
+      </div>
+
       <div className="mt-5 flex flex-wrap gap-3">
-        <button onClick={onApprove} disabled={status === 'approved'} className="inline-flex items-center gap-2 rounded-full bg-emerald-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
+        <button onClick={approveReservation} disabled={status === 'approved'} className="inline-flex items-center gap-2 rounded-full bg-emerald-900 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
           <CheckCircle2 className="h-4 w-4" />
           Approve
         </button>
-        <button onClick={onDecline} disabled={status === 'declined'} className="inline-flex items-center gap-2 rounded-full border border-red-100 px-5 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
+        <button onClick={() => onUpdate({ status: 'declined' }, 'Reservation declined.')} disabled={status === 'declined'} className="inline-flex items-center gap-2 rounded-full border border-red-100 px-5 py-2.5 text-sm font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">
           <XCircle className="h-4 w-4" />
           Decline
         </button>
+        {['cancelled', 'completed', 'no-show'].map((nextStatus) => (
+          <button
+            key={nextStatus}
+            onClick={() => onUpdate({ status: nextStatus }, `Reservation marked ${nextStatus}.`)}
+            disabled={status === nextStatus}
+            className="rounded-full border border-stone-200 px-5 py-2.5 text-sm font-semibold capitalize text-stone-700 transition hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {nextStatus}
+          </button>
+        ))}
       </div>
     </article>
   )
@@ -181,6 +278,7 @@ function Detail({ label, value }) {
 
 function getStatusClass(status) {
   if (status === 'approved') return 'bg-emerald-100 text-emerald-950'
-  if (status === 'declined') return 'bg-red-100 text-red-800'
+  if (status === 'declined' || status === 'cancelled' || status === 'no-show') return 'bg-red-100 text-red-800'
+  if (status === 'completed') return 'bg-stone-200 text-stone-800'
   return 'bg-amber-100 text-amber-900'
 }

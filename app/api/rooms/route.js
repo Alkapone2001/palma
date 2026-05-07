@@ -1,4 +1,5 @@
 import { ObjectId } from 'mongodb'
+import { isAdminRequest, unauthorized } from '../../lib/adminAuth'
 import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
 
 export async function GET() {
@@ -19,6 +20,10 @@ export async function GET() {
 }
 
 export async function POST(request) {
+  if (!isAdminRequest(request)) {
+    return unauthorized()
+  }
+
   const client = createMongoClient()
 
   try {
@@ -65,6 +70,10 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
+  if (!isAdminRequest(request)) {
+    return unauthorized()
+  }
+
   const client = createMongoClient()
 
   try {
@@ -110,6 +119,10 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
+  if (!isAdminRequest(request)) {
+    return unauthorized()
+  }
+
   const client = createMongoClient()
   const url = new URL(request.url)
   const id = url.searchParams.get('id')

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ImageOff, Plus, Trash2, UsersRound } from 'lucide-react'
+import { ArrowLeft, ImageOff, Pencil, Plus, Save, Trash2, UsersRound, X } from 'lucide-react'
 
 const emptyRoom = {
   name: '',
@@ -27,6 +27,8 @@ export default function Rooms() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [editingRoomId, setEditingRoomId] = useState('')
+  const [editRoom, setEditRoom] = useState(emptyRoom)
 
   useEffect(() => {
     fetchRooms()
@@ -52,6 +54,14 @@ export default function Rooms() {
     }))
   }
 
+  const handleEditChange = (event) => {
+    const { name, value, type, checked } = event.target
+    setEditRoom((current) => ({
+      ...current,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
+  }
+
   const handleAddRoom = async (event) => {
     event.preventDefault()
     setSaving(true)
@@ -62,17 +72,7 @@ export default function Rooms() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          ...newRoom,
-          capacity: Number(newRoom.capacity),
-          price: newRoom.price ? Number(newRoom.price) : '',
-          galleryImages: newRoom.galleryImages
-            .split('\n')
-            .map((image) => image.trim())
-            .filter(Boolean),
-          details: newRoom.details
-            .split('\n')
-            .map((detail) => detail.trim())
-            .filter(Boolean),
+          ...normalizeRoomForm(newRoom),
           createdAt: new Date().toISOString(),
         }),
       })
@@ -86,6 +86,47 @@ export default function Rooms() {
       fetchRooms()
     } catch (error) {
       setMessage('Failed to add room.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleStartEdit = (room) => {
+    setMessage('')
+    setEditingRoomId(room._id)
+    setEditRoom(roomToForm(room))
+  }
+
+  const handleCancelEdit = () => {
+    setEditingRoomId('')
+    setEditRoom(emptyRoom)
+  }
+
+  const handleUpdateRoom = async (event) => {
+    event.preventDefault()
+    setSaving(true)
+    setMessage('')
+
+    try {
+      const response = await fetch('/api/rooms', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingRoomId,
+          ...normalizeRoomForm(editRoom),
+          updatedAt: new Date().toISOString(),
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update room')
+      }
+
+      setMessage('Room updated.')
+      handleCancelEdit()
+      fetchRooms()
+    } catch (error) {
+      setMessage('Failed to update room.')
     } finally {
       setSaving(false)
     }
@@ -227,6 +268,13 @@ export default function Rooms() {
                 <RoomAdminCard
                   key={room._id}
                   room={room}
+                  editing={editingRoomId === room._id}
+                  editRoom={editRoom}
+                  saving={saving}
+                  onEditChange={handleEditChange}
+                  onStartEdit={() => handleStartEdit(room)}
+                  onCancelEdit={handleCancelEdit}
+                  onUpdate={handleUpdateRoom}
                   onToggle={() => handleToggleAvailability(room)}
                   onDelete={() => handleDeleteRoom(room._id)}
                 />
@@ -239,8 +287,40 @@ export default function Rooms() {
   )
 }
 
-function RoomAdminCard({ room, onToggle, onDelete }) {
+function RoomAdminCard({ room, editing, editRoom, saving, onEditChange, onStartEdit, onCancelEdit, onUpdate, onToggle, onDelete }) {
   const details = Array.isArray(room.details) ? room.details : []
+
+  if (editing) {
+    return (
+      <article className="overflow-hidden rounded-[2rem] border border-emerald-200 bg-white p-5 shadow-xl shadow-stone-200/60 lg:col-span-3">
+        <form onSubmit={onUpdate}>
+          <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-800">Editing room</p>
+              <h3 className="mt-2 text-2xl font-semibold text-stone-950">{room.name}</h3>
+            </div>
+            <div className="flex flex-wrap gap-3">
+              <button type="button" onClick={onCancelEdit} className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">
+                <X className="h-4 w-4" />
+                Cancel
+              </button>
+              <button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-full bg-emerald-900 px-5 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60">
+                <Save className="h-4 w-4" />
+                {saving ? 'Saving...' : 'Save changes'}
+              </button>
+            </div>
+          </div>
+
+          <RoomFields room={editRoom} onChange={onEditChange} />
+
+          <label className="mt-6 flex items-center gap-3 text-sm font-semibold text-stone-800">
+            <input type="checkbox" name="isAvailable" checked={editRoom.isAvailable} onChange={onEditChange} className="h-5 w-5 rounded border-stone-300 text-emerald-900 focus:ring-emerald-900" />
+            Show as available for booking
+          </label>
+        </form>
+      </article>
+    )
+  }
 
   return (
     <article className="overflow-hidden rounded-[2rem] border border-stone-200 bg-white shadow-xl shadow-stone-200/60">
@@ -265,6 +345,10 @@ function RoomAdminCard({ room, onToggle, onDelete }) {
         <p className="mt-4 line-clamp-3 leading-7 text-stone-600">{room.description}</p>
         {details.length > 0 && <p className="mt-3 text-sm text-stone-500">{details.length} detail{details.length === 1 ? '' : 's'} added</p>}
         <div className="mt-6 flex flex-wrap gap-3">
+          <button onClick={onStartEdit} className="inline-flex items-center gap-2 rounded-full bg-emerald-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800">
+            <Pencil className="h-4 w-4" />
+            Edit
+          </button>
           <button onClick={onToggle} className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-800 transition hover:bg-stone-50">
             {room.isAvailable === false ? 'Show room' : 'Hide room'}
           </button>
@@ -276,4 +360,89 @@ function RoomAdminCard({ room, onToggle, onDelete }) {
       </div>
     </article>
   )
+}
+
+function RoomFields({ room, onChange }) {
+  return (
+    <div className="mt-6 grid gap-5 md:grid-cols-2">
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Room name</span>
+        <input name="name" value={room.name} onChange={onChange} required className="field-input" placeholder="Garden Room" />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Capacity</span>
+        <input type="number" name="capacity" value={room.capacity} onChange={onChange} min="1" required className="field-input" />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Image URL</span>
+        <input type="url" name="imageUrl" value={room.imageUrl} onChange={onChange} className="field-input" placeholder="https://..." />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Gallery image URLs</span>
+        <textarea name="galleryImages" value={room.galleryImages} onChange={onChange} rows="3" className="field-input resize-none" placeholder={'https://...\nhttps://...'} />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Room category</span>
+        <input name="category" value={room.category} onChange={onChange} className="field-input" placeholder="Standard double room" />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Room size</span>
+        <input name="size" value={room.size} onChange={onChange} className="field-input" placeholder="32 m2" />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Bed type</span>
+        <input name="bedType" value={room.bedType} onChange={onChange} className="field-input" placeholder="1 queen bed" />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Price</span>
+        <input type="number" name="price" value={room.price} onChange={onChange} min="0" className="field-input" placeholder="250" />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Price unit</span>
+        <input name="priceUnit" value={room.priceUnit} onChange={onChange} className="field-input" placeholder="per night" />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Fallback price label</span>
+        <input name="priceLabel" value={room.priceLabel} onChange={onChange} className="field-input" placeholder="Price on request" />
+      </label>
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Price note</span>
+        <input name="priceNote" value={room.priceNote} onChange={onChange} className="field-input" placeholder="Breakfast included. City tax not included." />
+      </label>
+      <label className="md:col-span-2">
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Description</span>
+        <textarea name="description" value={room.description} onChange={onChange} required rows="3" className="field-input resize-none" placeholder="A comfortable room above the restaurant for overnight stays." />
+      </label>
+      <label className="md:col-span-2">
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Details</span>
+        <textarea name="details" value={room.details} onChange={onChange} rows="4" className="field-input resize-none" placeholder={'Private bathroom\nFree Wi-Fi\nBreakfast available\nAir conditioning'} />
+      </label>
+    </div>
+  )
+}
+
+function normalizeRoomForm(room) {
+  return {
+    ...room,
+    capacity: Number(room.capacity),
+    price: room.price ? Number(room.price) : '',
+    galleryImages: String(room.galleryImages || '')
+      .split('\n')
+      .map((image) => image.trim())
+      .filter(Boolean),
+    details: String(room.details || '')
+      .split('\n')
+      .map((detail) => detail.trim())
+      .filter(Boolean),
+  }
+}
+
+function roomToForm(room) {
+  return {
+    ...emptyRoom,
+    ...room,
+    galleryImages: Array.isArray(room.galleryImages) ? room.galleryImages.join('\n') : room.galleryImages || '',
+    details: Array.isArray(room.details) ? room.details.join('\n') : room.details || '',
+    isAvailable: room.isAvailable !== false,
+  }
 }
