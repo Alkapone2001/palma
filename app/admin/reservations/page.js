@@ -61,6 +61,11 @@ export default function Reservations() {
                     <div>
                       <strong>Type:</strong> {reservation.type}
                     </div>
+                    {reservation.roomName && (
+                      <div>
+                        <strong>Room:</strong> {reservation.roomName}
+                      </div>
+                    )}
                     <div>
                       <strong>Date:</strong> {reservation.date}
                     </div>

@@ -8,7 +8,7 @@ export async function GET() {
     await client.connect()
     const database = getRestaurantDb(client)
     const rooms = database.collection('rooms')
-    const result = await rooms.find({}).toArray()
+    const result = await rooms.find({}).sort({ createdAt: -1, name: 1 }).toArray()
     return Response.json(result)
   } catch (error) {
     console.error(error)
@@ -23,10 +23,38 @@ export async function POST(request) {
 
   try {
     const body = await request.json()
+    const room = {
+      name: body.name,
+      description: body.description,
+      capacity: Number(body.capacity || 1),
+      imageUrl: body.imageUrl || '',
+      galleryImages: Array.isArray(body.galleryImages)
+        ? body.galleryImages
+        : String(body.galleryImages || '')
+            .split('\n')
+            .map((image) => image.trim())
+            .filter(Boolean),
+      category: body.category || '',
+      size: body.size || '',
+      bedType: body.bedType || '',
+      price: body.price ? Number(body.price) : '',
+      priceUnit: body.priceUnit || 'per reservation',
+      priceNote: body.priceNote || '',
+      priceLabel: body.priceLabel || '',
+      details: Array.isArray(body.details)
+        ? body.details
+        : String(body.details || '')
+            .split('\n')
+            .map((detail) => detail.trim())
+            .filter(Boolean),
+      isAvailable: body.isAvailable !== false,
+      createdAt: body.createdAt || new Date().toISOString(),
+    }
+
     await client.connect()
     const database = getRestaurantDb(client)
     const rooms = database.collection('rooms')
-    const result = await rooms.insertOne(body)
+    const result = await rooms.insertOne(room)
     return Response.json({ message: 'Room created', id: result.insertedId })
   } catch (error) {
     console.error(error)
@@ -41,7 +69,33 @@ export async function PUT(request) {
 
   try {
     const body = await request.json()
-    const { id, ...updateData } = body
+    const { id, ...bodyData } = body
+    const updateData = {
+      ...bodyData,
+      ...(bodyData.capacity !== undefined ? { capacity: Number(bodyData.capacity) } : {}),
+      ...(bodyData.price !== undefined ? { price: bodyData.price ? Number(bodyData.price) : '' } : {}),
+      ...(bodyData.galleryImages !== undefined
+        ? {
+            galleryImages: Array.isArray(bodyData.galleryImages)
+              ? bodyData.galleryImages
+              : String(bodyData.galleryImages || '')
+                  .split('\n')
+                  .map((image) => image.trim())
+                  .filter(Boolean),
+          }
+        : {}),
+      ...(bodyData.details !== undefined
+        ? {
+            details: Array.isArray(bodyData.details)
+              ? bodyData.details
+              : String(bodyData.details || '')
+                  .split('\n')
+                  .map((detail) => detail.trim())
+                  .filter(Boolean),
+          }
+        : {}),
+    }
+
     await client.connect()
     const database = getRestaurantDb(client)
     const rooms = database.collection('rooms')

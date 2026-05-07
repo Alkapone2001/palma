@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarDays, CheckCircle2, Clock, Mail, Phone, UserRound, UsersRound } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Clock, DoorOpen, Mail, Phone, UserRound, UsersRound } from 'lucide-react'
 
 const baseFields = {
   name: '',
@@ -14,8 +14,20 @@ const baseFields = {
   notes: '',
 }
 
-export default function BookingForm({ type, title, description, submitLabel, details = [] }) {
-  const [formData, setFormData] = useState({ ...baseFields, type })
+export default function BookingForm({ type, title, description, submitLabel, details = [], selectedRoom = null }) {
+  const getInitialData = () => ({
+    ...baseFields,
+    type,
+    ...(selectedRoom
+      ? {
+          roomId: selectedRoom._id,
+          roomName: selectedRoom.name,
+          guests: selectedRoom.capacity ? Math.min(Number(selectedRoom.capacity), baseFields.guests) : baseFields.guests,
+        }
+      : {}),
+  })
+
+  const [formData, setFormData] = useState(getInitialData)
   const [status, setStatus] = useState('idle')
 
   const handleChange = (event) => {
@@ -43,7 +55,7 @@ export default function BookingForm({ type, title, description, submitLabel, det
       }
 
       setStatus('success')
-      setFormData({ ...baseFields, type })
+      setFormData(getInitialData())
     } catch (error) {
       setStatus('error')
     }
@@ -67,6 +79,23 @@ export default function BookingForm({ type, title, description, submitLabel, det
         </aside>
 
         <form onSubmit={handleSubmit} className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-2xl shadow-stone-200/70 sm:p-8">
+          {selectedRoom && (
+            <div className="mb-7 rounded-[1.5rem] bg-emerald-950 p-5 text-white">
+              <div className="flex items-start gap-4">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10">
+                  <DoorOpen className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-100">Selected room</p>
+                  <h2 className="mt-2 text-2xl font-semibold">{selectedRoom.name}</h2>
+                  <p className="mt-2 text-sm leading-6 text-white/70">
+                    Up to {selectedRoom.capacity || 'your'} guests{selectedRoom.priceLabel ? ` - ${selectedRoom.priceLabel}` : ''}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="grid gap-5 md:grid-cols-2">
             <Field icon={UserRound} label="Full name">
               <input name="name" value={formData.name} onChange={handleChange} required className="field-input" placeholder="Your name" />
