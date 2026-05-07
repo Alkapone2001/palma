@@ -14,7 +14,7 @@ const emptyRoom = {
   size: '',
   bedType: '',
   price: '',
-  priceUnit: 'per reservation',
+  priceUnit: 'per night',
   priceNote: '',
   priceLabel: '',
   details: '',
@@ -138,9 +138,9 @@ export default function Rooms() {
       <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Rooms</p>
-          <h1 className="mt-3 text-4xl font-semibold text-stone-950">Manage private rooms</h1>
+          <h1 className="mt-3 text-4xl font-semibold text-stone-950">Manage hotel rooms</h1>
           <p className="mt-4 leading-7 text-stone-600">
-            Rooms marked available will show on the public room reservation page with their photo, capacity, description, and details.
+            Rooms marked available will show on the public hotel room booking page with photos, sleeping capacity, nightly price, and details.
           </p>
         </div>
 
@@ -168,15 +168,15 @@ export default function Rooms() {
             </label>
             <label>
               <span className="mb-2 block text-sm font-semibold text-stone-800">Room category</span>
-              <input name="category" value={newRoom.category} onChange={handleChange} className="field-input" placeholder="Private dining room" />
+              <input name="category" value={newRoom.category} onChange={handleChange} className="field-input" placeholder="Standard double room" />
             </label>
             <label>
               <span className="mb-2 block text-sm font-semibold text-stone-800">Room size</span>
               <input name="size" value={newRoom.size} onChange={handleChange} className="field-input" placeholder="32 m2" />
             </label>
             <label>
-              <span className="mb-2 block text-sm font-semibold text-stone-800">Setup / room type</span>
-              <input name="bedType" value={newRoom.bedType} onChange={handleChange} className="field-input" placeholder="Boardroom setup" />
+              <span className="mb-2 block text-sm font-semibold text-stone-800">Bed type</span>
+              <input name="bedType" value={newRoom.bedType} onChange={handleChange} className="field-input" placeholder="1 queen bed" />
             </label>
             <label>
               <span className="mb-2 block text-sm font-semibold text-stone-800">Price</span>
@@ -184,7 +184,7 @@ export default function Rooms() {
             </label>
             <label>
               <span className="mb-2 block text-sm font-semibold text-stone-800">Price unit</span>
-              <input name="priceUnit" value={newRoom.priceUnit} onChange={handleChange} className="field-input" placeholder="per reservation" />
+              <input name="priceUnit" value={newRoom.priceUnit} onChange={handleChange} className="field-input" placeholder="per night" />
             </label>
             <label>
               <span className="mb-2 block text-sm font-semibold text-stone-800">Fallback price label</span>
@@ -192,15 +192,15 @@ export default function Rooms() {
             </label>
             <label>
               <span className="mb-2 block text-sm font-semibold text-stone-800">Price note</span>
-              <input name="priceNote" value={newRoom.priceNote} onChange={handleChange} className="field-input" placeholder="Includes room setup. Food and drinks separate." />
+              <input name="priceNote" value={newRoom.priceNote} onChange={handleChange} className="field-input" placeholder="Breakfast included. City tax not included." />
             </label>
             <label className="md:col-span-2">
               <span className="mb-2 block text-sm font-semibold text-stone-800">Description</span>
-              <textarea name="description" value={newRoom.description} onChange={handleChange} required rows="3" className="field-input resize-none" placeholder="A quiet private dining room for intimate celebrations and business dinners." />
+              <textarea name="description" value={newRoom.description} onChange={handleChange} required rows="3" className="field-input resize-none" placeholder="A comfortable room above the restaurant for overnight stays." />
             </label>
             <label className="md:col-span-2">
               <span className="mb-2 block text-sm font-semibold text-stone-800">Details</span>
-              <textarea name="details" value={newRoom.details} onChange={handleChange} rows="4" className="field-input resize-none" placeholder={'Private entrance\nProjector available\nFamily-style menu options'} />
+              <textarea name="details" value={newRoom.details} onChange={handleChange} rows="4" className="field-input resize-none" placeholder={'Private bathroom\nFree Wi-Fi\nBreakfast available\nAir conditioning'} />
             </label>
           </div>
           <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -261,7 +261,7 @@ function RoomAdminCard({ room, onToggle, onDelete }) {
           Up to {room.capacity} guests
         </p>
         {room.priceLabel && <p className="mt-2 text-sm font-semibold text-emerald-900">{room.priceLabel}</p>}
-        {room.price && <p className="mt-2 text-sm font-semibold text-emerald-900">${Number(room.price).toLocaleString()} {room.priceUnit || 'per reservation'}</p>}
+        {room.price && <p className="mt-2 text-sm font-semibold text-emerald-900">${Number(room.price).toLocaleString()} {room.priceUnit || 'per night'}</p>}
         <p className="mt-4 line-clamp-3 leading-7 text-stone-600">{room.description}</p>
         {details.length > 0 && <p className="mt-3 text-sm text-stone-500">{details.length} detail{details.length === 1 ? '' : 's'} added</p>}
         <div className="mt-6 flex flex-wrap gap-3">

@@ -13,9 +13,9 @@ export default function TableBooking() {
         description="Tell us when you would like to dine, how many guests are joining, and anything that helps us prepare the table properly."
         submitLabel="Request table"
         details={[
-          'Best for lunch, dinner, date nights, and casual gatherings.',
+          'Fast table request for lunch, dinner, or a casual night out.',
           'We will confirm by phone or email after checking availability.',
-          'Add notes for allergies, preferred seating, or celebrations.',
+          'Occasion and notes are optional for table bookings.',
         ]}
       />
     </div>

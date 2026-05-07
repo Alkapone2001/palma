@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CalendarDays, CheckCircle2, Clock, DoorOpen, Mail, Phone, UserRound, UsersRound } from 'lucide-react'
+import { CalendarDays, CheckCircle2, Clock, DoorOpen, Mail, MessageSquare, Phone, UserRound, UsersRound } from 'lucide-react'
 
 const baseFields = {
   name: '',
@@ -11,6 +11,9 @@ const baseFields = {
   time: '',
   guests: 2,
   occasion: '',
+  reason: '',
+  setup: '',
+  duration: '',
   notes: '',
 }
 
@@ -89,7 +92,7 @@ export default function BookingForm({ type, title, description, submitLabel, det
                   <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-100">Selected room</p>
                   <h2 className="mt-2 text-2xl font-semibold">{selectedRoom.name}</h2>
                   <p className="mt-2 text-sm leading-6 text-white/70">
-                    Up to {selectedRoom.capacity || 'your'} guests{selectedRoom.priceLabel ? ` - ${selectedRoom.priceLabel}` : ''}
+                    Up to {selectedRoom.capacity || 'your'} guests{selectedRoom.priceLabel ? ` - ${selectedRoom.priceLabel}` : selectedRoom.price ? ` - $${Number(selectedRoom.price).toLocaleString()}` : ''}
                   </p>
                 </div>
               </div>
@@ -115,20 +118,61 @@ export default function BookingForm({ type, title, description, submitLabel, det
             <Field icon={Clock} label="Time">
               <input type="time" name="time" value={formData.time} onChange={handleChange} required className="field-input" />
             </Field>
+            {type === 'room' ? (
+              <>
+                <label className="md:col-span-2">
+                  <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-stone-800">
+                    <MessageSquare className="h-4 w-4 text-emerald-800" />
+                    Reason for booking the room
+                  </span>
+                  <select name="reason" value={formData.reason} onChange={handleChange} required className="field-input">
+                    <option value="">Select reason</option>
+                    <option value="birthday celebration">Birthday celebration</option>
+                    <option value="business dinner">Business dinner</option>
+                    <option value="family gathering">Family gathering</option>
+                    <option value="private party">Private party</option>
+                    <option value="meeting or presentation">Meeting or presentation</option>
+                    <option value="other private event">Other private event</option>
+                  </select>
+                </label>
+                <label>
+                  <span className="mb-2 block text-sm font-semibold text-stone-800">Room setup</span>
+                  <select name="setup" value={formData.setup} onChange={handleChange} className="field-input">
+                    <option value="">Select setup</option>
+                    <option value="single long table">Single long table</option>
+                    <option value="separate tables">Separate tables</option>
+                    <option value="presentation setup">Presentation setup</option>
+                    <option value="cocktail standing">Cocktail standing</option>
+                    <option value="not sure">Not sure yet</option>
+                  </select>
+                </label>
+                <label>
+                  <span className="mb-2 block text-sm font-semibold text-stone-800">Expected duration</span>
+                  <select name="duration" value={formData.duration} onChange={handleChange} className="field-input">
+                    <option value="">Select duration</option>
+                    <option value="up to 2 hours">Up to 2 hours</option>
+                    <option value="2-3 hours">2-3 hours</option>
+                    <option value="3-4 hours">3-4 hours</option>
+                    <option value="full evening">Full evening</option>
+                  </select>
+                </label>
+              </>
+            ) : (
+              <label className="md:col-span-2">
+                <span className="mb-2 block text-sm font-semibold text-stone-800">Occasion</span>
+                <select name="occasion" value={formData.occasion} onChange={handleChange} className="field-input">
+                  <option value="">Optional</option>
+                  <option value="casual dinner">Casual dinner</option>
+                  <option value="date night">Date night</option>
+                  <option value="business">Business</option>
+                  <option value="birthday">Birthday</option>
+                  <option value="family gathering">Family gathering</option>
+                </select>
+              </label>
+            )}
             <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-semibold text-stone-800">Occasion</span>
-              <select name="occasion" value={formData.occasion} onChange={handleChange} className="field-input">
-                <option value="">Select one</option>
-                <option value="casual dinner">Casual dinner</option>
-                <option value="date night">Date night</option>
-                <option value="business">Business</option>
-                <option value="birthday">Birthday</option>
-                <option value="family gathering">Family gathering</option>
-              </select>
-            </label>
-            <label className="md:col-span-2">
-              <span className="mb-2 block text-sm font-semibold text-stone-800">Notes</span>
-              <textarea name="notes" value={formData.notes} onChange={handleChange} rows="4" className="field-input resize-none" placeholder={type === 'room' ? 'Tell us about seating, privacy, or setup needs.' : 'Allergies, stroller space, preferred area, or anything else.'} />
+              <span className="mb-2 block text-sm font-semibold text-stone-800">{type === 'room' ? 'Event notes' : 'Notes'}</span>
+              <textarea name="notes" value={formData.notes} onChange={handleChange} rows="4" className="field-input resize-none" placeholder={type === 'room' ? 'Tell us about the event, menu needs, privacy, decorations, or anything the team should prepare.' : 'Allergies, stroller space, preferred area, or anything else.'} />
             </label>
           </div>
 

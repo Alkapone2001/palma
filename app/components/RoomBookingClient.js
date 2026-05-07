@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowDown, ArrowLeft, CheckCircle2, DoorOpen, ImageOff, Maximize2, Sparkles, UsersRound } from 'lucide-react'
-import BookingForm from './BookingForm'
+import { ArrowDown, ArrowLeft, CalendarDays, CheckCircle2, DoorOpen, ImageOff, Mail, Maximize2, Phone, Sparkles, UserRound, UsersRound } from 'lucide-react'
 
 export default function RoomBookingClient() {
   const [rooms, setRooms] = useState([])
@@ -54,10 +53,10 @@ export default function RoomBookingClient() {
       <section className="bg-stone-50 px-4 py-20 sm:px-6 lg:px-8">
         <div className="mx-auto max-w-7xl">
           <div className="max-w-3xl">
-            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Private rooms</p>
-            <h1 className="mt-4 text-4xl font-semibold text-stone-950 sm:text-5xl">Choose an available room.</h1>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Hotel rooms</p>
+            <h1 className="mt-4 text-4xl font-semibold text-stone-950 sm:text-5xl">Choose a room for your stay.</h1>
             <p className="mt-5 text-lg leading-8 text-stone-600">
-              Browse the rooms that are currently open for requests. Pick the space that fits your gathering, then send the reservation details below.
+              Palma 5 is a restaurant with rooms for overnight stays. View room details, price, and sleeping capacity, then request approval for your stay.
             </p>
           </div>
 
@@ -80,7 +79,7 @@ export default function RoomBookingClient() {
               <DoorOpen className="h-10 w-10 text-emerald-800" />
               <h2 className="mt-5 text-2xl font-semibold text-stone-950">No rooms are published yet.</h2>
               <p className="mt-3 max-w-2xl leading-7 text-stone-600">
-                Add rooms from the admin page and mark them available. They will appear here with their photos, capacity, details, and descriptions.
+                Add hotel rooms from the admin page and mark them available. They will appear here with photos, sleeping capacity, prices, and details.
               </p>
             </div>
           )}
@@ -110,25 +109,16 @@ export default function RoomBookingClient() {
 
       <div id="room-request">
         {selectedRoom ? (
-          <BookingForm
+          <HotelRoomBookingForm
             key={selectedRoom._id}
-            type="room"
-            title="Request this room"
-            description="Share the date, time, guest count, and any setup notes. We will check availability and confirm the room with you directly."
-            submitLabel="Request selected room"
-            selectedRoom={selectedRoom}
-            details={[
-              'The selected room is included with your request.',
-              'The team will confirm availability before the booking is final.',
-              'Use notes for layout, privacy, menu, or celebration details.',
-            ]}
+            room={selectedRoom}
           />
         ) : (
           <section className="bg-white px-4 py-16 sm:px-6 lg:px-8">
             <div className="mx-auto flex max-w-7xl flex-col items-start justify-between gap-5 rounded-[2rem] border border-stone-200 p-8 sm:flex-row sm:items-center">
               <div>
                 <h2 className="text-2xl font-semibold text-stone-950">View a room to continue.</h2>
-                <p className="mt-2 text-stone-600">Open a room above to see the full details and price, then reserve from there.</p>
+                <p className="mt-2 text-stone-600">Open a hotel room above to see full details and price, then request the stay.</p>
               </div>
               <ArrowDown className="h-6 w-6 text-emerald-800" />
             </div>
@@ -162,7 +152,7 @@ function RoomCard({ room, active, onView }) {
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
         <div className="absolute bottom-4 left-4 rounded-full bg-white px-4 py-2 text-sm font-semibold text-stone-950 shadow">
-          {room.category || 'Private room'}
+          {room.category || 'Hotel room'}
         </div>
       </div>
 
@@ -193,7 +183,7 @@ function RoomCard({ room, active, onView }) {
 
       <div className="flex flex-col justify-between border-t border-stone-200 bg-stone-50 p-6 lg:border-l lg:border-t-0">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">Room price</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">Nightly price</p>
           <div className="mt-4">
             <p className="text-3xl font-semibold text-stone-950">{priceText.main}</p>
             <p className="mt-1 text-sm text-stone-500">{priceText.sub}</p>
@@ -203,7 +193,7 @@ function RoomCard({ room, active, onView }) {
           )}
           <div className="mt-5 flex items-center gap-2 text-sm font-medium text-emerald-800">
             <Sparkles className="h-4 w-4" />
-            Request confirmation
+            Approval required
           </div>
         </div>
         <button
@@ -211,7 +201,7 @@ function RoomCard({ room, active, onView }) {
           onClick={onView}
           className="mt-6 w-full rounded-full bg-emerald-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800"
         >
-          {active ? 'Viewing details' : 'View details'}
+          {active ? 'Viewing details' : 'View room'}
         </button>
       </div>
     </article>
@@ -262,7 +252,7 @@ function RoomDetail({ room, onBack, onReserve }) {
             </div>
 
             <div className="mt-8">
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">{room.category || 'Private room'}</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">{room.category || 'Hotel room'}</p>
               <h2 className="mt-3 text-4xl font-semibold text-stone-950">{room.name}</h2>
               <div className="mt-4 flex flex-wrap gap-2">
                 <RoomBadge icon={UsersRound}>Up to {room.capacity} guests</RoomBadge>
@@ -290,7 +280,7 @@ function RoomDetail({ room, onBack, onReserve }) {
           </div>
 
           <aside className="sticky top-6 rounded-[1.5rem] border border-stone-200 bg-stone-50 p-6 shadow-2xl shadow-stone-200/70">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">Price</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-stone-500">Nightly price</p>
             <div className="mt-4 border-b border-stone-200 pb-5">
               <p className="text-4xl font-semibold text-stone-950">{priceText.main}</p>
               <p className="mt-1 text-sm text-stone-500">{priceText.sub}</p>
@@ -309,15 +299,15 @@ function RoomDetail({ room, onBack, onReserve }) {
               )}
               {room.bedType && (
                 <div className="flex items-center justify-between gap-4">
-                  <span>Setup</span>
+                  <span>Bed</span>
                   <strong className="text-stone-950">{room.bedType}</strong>
                 </div>
               )}
             </div>
             <button type="button" onClick={onReserve} className="mt-7 w-full rounded-full bg-emerald-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800">
-              Reserve this room
+              Request this room
             </button>
-            <p className="mt-4 text-center text-xs leading-5 text-stone-500">Reservation is requested first. The restaurant confirms availability before it is final.</p>
+            <p className="mt-4 text-center text-xs leading-5 text-stone-500">Room stays are requested first. Admin approval confirms the booking.</p>
           </aside>
         </div>
       </div>
@@ -338,14 +328,136 @@ function getRoomPrice(room) {
   if (room.price) {
     return {
       main: `$${Number(room.price).toLocaleString()}`,
-      sub: room.priceUnit || 'per reservation',
+      sub: room.priceUnit || 'per night',
     }
   }
 
   return {
     main: room.priceLabel || 'Price on request',
-    sub: room.priceLabel ? 'package label' : 'we confirm after request',
+    sub: room.priceLabel ? 'price label' : 'we confirm after request',
   }
+}
+
+function HotelRoomBookingForm({ room }) {
+  const [formData, setFormData] = useState({
+    type: 'room',
+    roomId: room._id,
+    roomName: room.name,
+    name: '',
+    email: '',
+    phone: '',
+    checkIn: '',
+    checkOut: '',
+    adults: 1,
+    children: 0,
+    guests: 1,
+    notes: '',
+  })
+  const [status, setStatus] = useState('idle')
+
+  const handleChange = (event) => {
+    const { name, value } = event.target
+    setFormData((current) => {
+      const next = { ...current, [name]: value }
+      const adults = Number(name === 'adults' ? value : next.adults)
+      const children = Number(name === 'children' ? value : next.children)
+      return { ...next, guests: adults + children }
+    })
+  }
+
+  const handleSubmit = async (event) => {
+    event.preventDefault()
+    setStatus('submitting')
+
+    try {
+      const response = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          ...formData,
+          adults: Number(formData.adults),
+          children: Number(formData.children),
+          guests: Number(formData.guests),
+          status: 'pending',
+          createdAt: new Date().toISOString(),
+        }),
+      })
+
+      if (!response.ok) throw new Error('Room booking failed')
+      setStatus('success')
+    } catch (error) {
+      setStatus('error')
+    }
+  }
+
+  return (
+    <section className="bg-stone-50 px-4 py-24 sm:px-6 lg:px-8">
+      <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.8fr_1.2fr]">
+        <aside>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Room stay</p>
+          <h2 className="mt-4 text-4xl font-semibold text-stone-950">Request your stay</h2>
+          <p className="mt-5 text-lg leading-8 text-stone-600">
+            Send your check-in and check-out dates. The admin team will approve the request once the room is confirmed available.
+          </p>
+          <div className="mt-8 rounded-[1.5rem] bg-emerald-950 p-5 text-white">
+            <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-100">Selected room</p>
+            <h3 className="mt-2 text-2xl font-semibold">{room.name}</h3>
+            <p className="mt-2 text-sm text-white/70">Up to {room.capacity} guests</p>
+          </div>
+        </aside>
+
+        <form onSubmit={handleSubmit} className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-2xl shadow-stone-200/70 sm:p-8">
+          <div className="grid gap-5 md:grid-cols-2">
+            <Field icon={CalendarDays} label="Check-in">
+              <input type="date" name="checkIn" value={formData.checkIn} onChange={handleChange} required className="field-input" />
+            </Field>
+            <Field icon={CalendarDays} label="Check-out">
+              <input type="date" name="checkOut" value={formData.checkOut} onChange={handleChange} required className="field-input" />
+            </Field>
+            <Field icon={UsersRound} label="Adults">
+              <input type="number" name="adults" value={formData.adults} onChange={handleChange} min="1" max={room.capacity || 20} required className="field-input" />
+            </Field>
+            <Field icon={UsersRound} label="Children">
+              <input type="number" name="children" value={formData.children} onChange={handleChange} min="0" max={room.capacity || 20} className="field-input" />
+            </Field>
+            <Field icon={UserRound} label="Full name">
+              <input name="name" value={formData.name} onChange={handleChange} required className="field-input" placeholder="Your name" />
+            </Field>
+            <Field icon={Mail} label="Email">
+              <input type="email" name="email" value={formData.email} onChange={handleChange} required className="field-input" placeholder="you@example.com" />
+            </Field>
+            <Field icon={Phone} label="Phone">
+              <input type="tel" name="phone" value={formData.phone} onChange={handleChange} required className="field-input" placeholder="+1 555 0123" />
+            </Field>
+            <label className="md:col-span-2">
+              <span className="mb-2 block text-sm font-semibold text-stone-800">Special requests</span>
+              <textarea name="notes" value={formData.notes} onChange={handleChange} rows="4" className="field-input resize-none" placeholder="Arrival time, breakfast needs, extra bed, parking, or anything else." />
+            </label>
+          </div>
+
+          <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:items-center">
+            <button type="submit" disabled={status === 'submitting' || status === 'success'} className="rounded-full bg-emerald-900 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-70">
+              {status === 'submitting' ? 'Sending request...' : status === 'success' ? 'Request sent' : 'Request approval'}
+            </button>
+            {status === 'success' && <p className="text-sm font-medium text-emerald-700">Room request sent. Admin approval is pending.</p>}
+            {status === 'error' && <p className="text-sm font-medium text-red-700">Something went wrong. Please try again.</p>}
+          </div>
+        </form>
+      </div>
+    </section>
+  )
+}
+
+function Field({ icon: Icon, label, children }) {
+  return (
+    <label>
+      <span className="mb-2 flex items-center gap-2 text-sm font-semibold text-stone-800">
+        <Icon className="h-4 w-4 text-emerald-800" />
+        {label}
+      </span>
+      {children}
+    </label>
+  )
 }
 
 function getGalleryImages(room) {

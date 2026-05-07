@@ -38,7 +38,7 @@ export async function POST(request) {
       size: body.size || '',
       bedType: body.bedType || '',
       price: body.price ? Number(body.price) : '',
-      priceUnit: body.priceUnit || 'per reservation',
+      priceUnit: body.priceUnit || 'per night',
       priceNote: body.priceNote || '',
       priceLabel: body.priceLabel || '',
       details: Array.isArray(body.details)

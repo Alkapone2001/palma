@@ -18,7 +18,7 @@ export default function Header({ theme = 'light' }) {
             P
           </span>
           <span>
-            <span className="block text-lg font-semibold tracking-wide">Palma</span>
+            <span className="block text-lg font-semibold tracking-wide">Palma 5</span>
             <span className={`block text-xs uppercase ${isDark ? 'text-white/70' : 'text-stone-500'}`}>Restaurant and rooms</span>
           </span>
         </Link>

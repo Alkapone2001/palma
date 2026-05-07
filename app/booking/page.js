@@ -14,9 +14,9 @@ const options = [
   },
   {
     href: '/booking/room',
-    title: 'Reserve a private room',
-    label: 'Private events',
-    text: 'Choose this for birthdays, business dinners, family celebrations, or a more private hosted experience.',
+    title: 'Book a hotel room',
+    label: 'Rooms to sleep',
+    text: 'Choose this for overnight stays at Palma 5. View room details, price, and request approval from the admin team.',
     image: 'https://images.unsplash.com/photo-1544148103-0773bf10d330?auto=format&fit=crop&w=1200&q=85',
     icon: DoorOpen,
   },
@@ -28,7 +28,7 @@ export default function Booking() {
       <div className="relative bg-stone-950 pb-20 pt-28 text-white">
         <Header theme="dark" />
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-100">Book Palma</p>
+          <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-100">Book Palma 5</p>
           <h1 className="mt-5 max-w-3xl text-5xl font-semibold tracking-tight sm:text-6xl">What kind of reservation do you need?</h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-white/70">
             Tables and rooms are handled separately so we can ask the right questions and confirm the right space for you.
