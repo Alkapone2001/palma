@@ -1,12 +1,11 @@
-import { MongoClient } from 'mongodb'
+import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
 
 export async function GET() {
-  const uri = process.env.MONGODB_URI
-  const client = new MongoClient(uri)
+  const client = createMongoClient()
 
   try {
     await client.connect()
-    const database = client.db('restaurant')
+    const database = getRestaurantDb(client)
     const reservations = database.collection('reservations')
     const result = await reservations.find({}).toArray()
     return Response.json(result)
@@ -19,13 +18,12 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const uri = process.env.MONGODB_URI
-  const client = new MongoClient(uri)
+  const client = createMongoClient()
 
   try {
     const body = await request.json()
     await client.connect()
-    const database = client.db('restaurant')
+    const database = getRestaurantDb(client)
     const reservations = database.collection('reservations')
     const result = await reservations.insertOne(body)
     return Response.json({ message: 'Booking created', id: result.insertedId })

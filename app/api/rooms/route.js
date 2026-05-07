@@ -1,12 +1,12 @@
-import { MongoClient, ObjectId } from 'mongodb'
+import { ObjectId } from 'mongodb'
+import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
 
 export async function GET() {
-  const uri = process.env.MONGODB_URI
-  const client = new MongoClient(uri)
+  const client = createMongoClient()
 
   try {
     await client.connect()
-    const database = client.db('restaurant')
+    const database = getRestaurantDb(client)
     const rooms = database.collection('rooms')
     const result = await rooms.find({}).toArray()
     return Response.json(result)
@@ -19,13 +19,12 @@ export async function GET() {
 }
 
 export async function POST(request) {
-  const uri = process.env.MONGODB_URI
-  const client = new MongoClient(uri)
+  const client = createMongoClient()
 
   try {
     const body = await request.json()
     await client.connect()
-    const database = client.db('restaurant')
+    const database = getRestaurantDb(client)
     const rooms = database.collection('rooms')
     const result = await rooms.insertOne(body)
     return Response.json({ message: 'Room created', id: result.insertedId })
@@ -38,14 +37,13 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
-  const uri = process.env.MONGODB_URI
-  const client = new MongoClient(uri)
+  const client = createMongoClient()
 
   try {
     const body = await request.json()
     const { id, ...updateData } = body
     await client.connect()
-    const database = client.db('restaurant')
+    const database = getRestaurantDb(client)
     const rooms = database.collection('rooms')
     const result = await rooms.updateOne({ _id: new ObjectId(id) }, { $set: updateData })
     return Response.json({ message: 'Room updated' })
@@ -58,14 +56,13 @@ export async function PUT(request) {
 }
 
 export async function DELETE(request) {
-  const uri = process.env.MONGODB_URI
-  const client = new MongoClient(uri)
+  const client = createMongoClient()
   const url = new URL(request.url)
   const id = url.searchParams.get('id')
 
   try {
     await client.connect()
-    const database = client.db('restaurant')
+    const database = getRestaurantDb(client)
     const rooms = database.collection('rooms')
     const result = await rooms.deleteOne({ _id: new ObjectId(id) })
     return Response.json({ message: 'Room deleted' })

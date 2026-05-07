@@ -1,1 +1,15 @@
-{}
+{
+  "/booking/table/page": "app/booking/table/page.js",
+  "/booking/page": "app/booking/page.js",
+  "/page": "app/page.js",
+  "/booking/room/page": "app/booking/room/page.js",
+  "/menu/page": "app/menu/page.js",
+  "/admin/page": "app/admin/page.js",
+  "/admin/rooms/page": "app/admin/rooms/page.js",
+  "/admin/tables/page": "app/admin/tables/page.js",
+  "/contact/page": "app/contact/page.js",
+  "/admin/reservations/page": "app/admin/reservations/page.js",
+  "/api/tables/route": "app/api/tables/route.js",
+  "/api/rooms/route": "app/api/rooms/route.js",
+  "/api/booking/route": "app/api/booking/route.js"
+}
