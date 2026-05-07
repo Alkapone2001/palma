@@ -30,10 +30,10 @@ export default function Admin() {
               <h3 className="text-lg font-semibold text-gray-900">Manage Tables</h3>
               <p className="text-gray-600">Add, edit, or delete tables</p>
             </Link>
-            <div className="bg-white shadow rounded-lg p-6">
+            <Link href="/admin/reservations" className="bg-white shadow rounded-lg p-6 hover:shadow-lg transition-shadow">
               <h3 className="text-lg font-semibold text-gray-900">Reservations</h3>
               <p className="text-gray-600">View and manage reservations</p>
-            </div>
+            </Link>
           </div>
         </div>
       </main>

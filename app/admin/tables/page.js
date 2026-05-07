@@ -1,20 +1,59 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export default function Tables() {
-  const [tables, setTables] = useState([
-    { id: 1, name: 'Table 1', seats: 4 },
-    { id: 2, name: 'Table 2', seats: 6 },
-  ])
-
+  const [tables, setTables] = useState([])
   const [newTable, setNewTable] = useState({ name: '', seats: 2 })
+  const [loading, setLoading] = useState(true)
 
-  const handleAddTable = () => {
-    setTables([...tables, { ...newTable, id: tables.length + 1 }])
-    setNewTable({ name: '', seats: 2 })
+  useEffect(() => {
+    fetchTables()
+  }, [])
+
+  const fetchTables = async () => {
+    try {
+      const response = await fetch('/api/tables')
+      const data = await response.json()
+      setTables(data)
+    } catch (error) {
+      console.error('Failed to fetch tables:', error)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const handleAddTable = async () => {
+    try {
+      const response = await fetch('/api/tables', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTable),
+      })
+      if (response.ok) {
+        setNewTable({ name: '', seats: 2 })
+        fetchTables()
+      }
+    } catch (error) {
+      console.error('Failed to add table:', error)
+    }
+  }
+
+  const handleDeleteTable = async (id) => {
+    try {
+      const response = await fetch(`/api/tables?id=${id}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        fetchTables()
+      }
+    } catch (error) {
+      console.error('Failed to delete table:', error)
+    }
+  }
+
+  if (loading) return <div>Loading...</div>
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -24,9 +63,9 @@ export default function Tables() {
             <div className="flex-shrink-0 flex items-center">
               <Link href="/admin" className="text-xl font-bold text-gray-900">Admin Dashboard</Link>
             </div>
-          </div>
-          <div className="flex items-center space-x-4">
-            <Link href="/" className="text-gray-700 hover:text-gray-900">Back to Site</Link>
+            <div className="flex items-center space-x-4">
+              <Link href="/" className="text-gray-700 hover:text-gray-900">Back to Site</Link>
+            </div>
           </div>
         </div>
       </header>
@@ -48,12 +87,12 @@ export default function Tables() {
             <h3 className="text-lg font-semibold mb-4">Existing Tables</h3>
             <ul className="space-y-2">
               {tables.map(table => (
-                <li key={table.id} className="flex justify-between items-center p-4 border rounded">
+                <li key={table._id} className="flex justify-between items-center p-4 border rounded">
                   <div>
                     <h4 className="font-semibold">{table.name}</h4>
                     <p className="text-sm text-gray-500">Seats: {table.seats}</p>
                   </div>
-                  <button className="text-red-500 hover:text-red-700">Delete</button>
+                  <button onClick={() => handleDeleteTable(table._id)} className="text-red-500 hover:text-red-700">Delete</button>
                 </li>
               ))}
             </ul>

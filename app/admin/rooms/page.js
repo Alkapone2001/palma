@@ -1,20 +1,59 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
 export default function Rooms() {
-  const [rooms, setRooms] = useState([
-    { id: 1, name: 'Room 1', description: 'Elegant room for events', capacity: 20 },
-    { id: 2, name: 'Room 2', description: 'Cozy room for small gatherings', capacity: 10 },
-  ])
-
+  const [rooms, setRooms] = useState([])
   const [newRoom, setNewRoom] = useState({ name: '', description: '', capacity: 1 })
+  const [loading, setLoading] = useState(true)
 
-  const handleAddRoom = () => {
-    setRooms([...rooms, { ...newRoom, id: rooms.length + 1 }])
-    setNewRoom({ name: '', description: '', capacity: 1 })
+  useEffect(() => {
+    fetchRooms()
+  }, [])
+
+  const fetchRooms = async () => {
+    try {
+      const response = await fetch('/api/rooms')
+      const data = await response.json()
+      setRooms(data)
+    } catch (error) {
+      console.error('Failed to fetch rooms:', error)
+    } finally {
+      setLoading(false)
+    }
   }
+
+  const handleAddRoom = async () => {
+    try {
+      const response = await fetch('/api/rooms', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newRoom),
+      })
+      if (response.ok) {
+        setNewRoom({ name: '', description: '', capacity: 1 })
+        fetchRooms()
+      }
+    } catch (error) {
+      console.error('Failed to add room:', error)
+    }
+  }
+
+  const handleDeleteRoom = async (id) => {
+    try {
+      const response = await fetch(`/api/rooms?id=${id}`, {
+        method: 'DELETE',
+      })
+      if (response.ok) {
+        fetchRooms()
+      }
+    } catch (error) {
+      console.error('Failed to delete room:', error)
+    }
+  }
+
+  if (loading) return <div>Loading...</div>
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -39,9 +78,9 @@ export default function Rooms() {
           <div className="bg-white shadow rounded-lg p-6 mb-6">
             <h3 className="text-lg font-semibold mb-4">Add New Room</h3>
             <div className="space-y-4">
-              <input type="text" placeholder="Room Name" value={newRoom.name} onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })} className="block w-full border-gray-300 rounded-md shadow-sm" />
-              <input type="text" placeholder="Description" value={newRoom.description} onChange={(e) => setNewRoom({ ...newRoom, description: e.target.value })} className="block w-full border-gray-300 rounded-md shadow-sm" />
-              <input type="number" placeholder="Capacity" value={newRoom.capacity} onChange={(e) => setNewRoom({ ...newRoom, capacity: parseInt(e.target.value) })} className="block w-full border-gray-300 rounded-md shadow-sm" />
+              <input type="text" placeholder="Room Name" value={newRoom.name} onChange={(e) => setNewRoom({ ...newRoom, name: e.target.value })} className="block w-full border-gray-300 rounded-md shadow-sm p-2" />
+              <input type="text" placeholder="Description" value={newRoom.description} onChange={(e) => setNewRoom({ ...newRoom, description: e.target.value })} className="block w-full border-gray-300 rounded-md shadow-sm p-2" />
+              <input type="number" placeholder="Capacity" value={newRoom.capacity} onChange={(e) => setNewRoom({ ...newRoom, capacity: parseInt(e.target.value) })} className="block w-full border-gray-300 rounded-md shadow-sm p-2" />
               <button onClick={handleAddRoom} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
                 Add Room
               </button>
@@ -51,13 +90,13 @@ export default function Rooms() {
             <h3 className="text-lg font-semibold mb-4">Existing Rooms</h3>
             <ul className="space-y-2">
               {rooms.map(room => (
-                <li key={room.id} className="flex justify-between items-center p-4 border rounded">
+                <li key={room._id} className="flex justify-between items-center p-4 border rounded">
                   <div>
                     <h4 className="font-semibold">{room.name}</h4>
                     <p className="text-gray-600">{room.description}</p>
                     <p className="text-sm text-gray-500">Capacity: {room.capacity}</p>
                   </div>
-                  <button className="text-red-500 hover:text-red-700">Delete</button>
+                  <button onClick={() => handleDeleteRoom(room._id)} className="text-red-500 hover:text-red-700">Delete</button>
                 </li>
               ))}
             </ul>

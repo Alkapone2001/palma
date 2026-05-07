@@ -56,6 +56,8 @@ export default function Booking() {
               </div>
             </div>
             <div className="flex items-center space-x-4">
+              <Link href="/" className="text-gray-700 hover:text-gray-900">Home</Link>
+              <Link href="/menu" className="text-gray-700 hover:text-gray-900">Menu</Link>
               <Link href="/booking" className="text-gray-700 hover:text-gray-900">Book Now</Link>
               <Link href="/contact" className="text-gray-700 hover:text-gray-900">Contact</Link>
             </div>
