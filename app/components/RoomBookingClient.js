@@ -327,7 +327,7 @@ function RoomBadge({ icon: Icon, children }) {
 function getRoomPrice(room) {
   if (room.price) {
     return {
-      main: `$${Number(room.price).toLocaleString()}`,
+      main: `EUR ${Number(room.price).toLocaleString()}`,
       sub: room.priceUnit || 'per night',
     }
   }
@@ -339,6 +339,7 @@ function getRoomPrice(room) {
 }
 
 function HotelRoomBookingForm({ room }) {
+  const today = new Date().toISOString().slice(0, 10)
   const [formData, setFormData] = useState({
     type: 'room',
     roomId: room._id,
@@ -355,6 +356,11 @@ function HotelRoomBookingForm({ room }) {
   })
   const [status, setStatus] = useState('idle')
 
+  const nights = calculateNights(formData.checkIn, formData.checkOut)
+  const guestLimitExceeded = Number(formData.guests) > Number(room.capacity || 99)
+  const totalEstimate = room.price && nights > 0 ? Number(room.price) * nights : null
+  const canSubmit = nights > 0 && !guestLimitExceeded && status !== 'submitting' && status !== 'success'
+
   const handleChange = (event) => {
     const { name, value } = event.target
     setFormData((current) => {
@@ -367,6 +373,7 @@ function HotelRoomBookingForm({ room }) {
 
   const handleSubmit = async (event) => {
     event.preventDefault()
+    if (!canSubmit) return
     setStatus('submitting')
 
     try {
@@ -378,6 +385,8 @@ function HotelRoomBookingForm({ room }) {
           adults: Number(formData.adults),
           children: Number(formData.children),
           guests: Number(formData.guests),
+          nights,
+          estimatedTotal: totalEstimate,
           status: 'pending',
           createdAt: new Date().toISOString(),
         }),
@@ -409,10 +418,10 @@ function HotelRoomBookingForm({ room }) {
         <form onSubmit={handleSubmit} className="rounded-[2rem] border border-stone-200 bg-white p-5 shadow-2xl shadow-stone-200/70 sm:p-8">
           <div className="grid gap-5 md:grid-cols-2">
             <Field icon={CalendarDays} label="Check-in">
-              <input type="date" name="checkIn" value={formData.checkIn} onChange={handleChange} required className="field-input" />
+              <input type="date" name="checkIn" value={formData.checkIn} onChange={handleChange} min={today} required className="field-input" />
             </Field>
             <Field icon={CalendarDays} label="Check-out">
-              <input type="date" name="checkOut" value={formData.checkOut} onChange={handleChange} required className="field-input" />
+              <input type="date" name="checkOut" value={formData.checkOut} onChange={handleChange} min={formData.checkIn || today} required className="field-input" />
             </Field>
             <Field icon={UsersRound} label="Adults">
               <input type="number" name="adults" value={formData.adults} onChange={handleChange} min="1" max={room.capacity || 20} required className="field-input" />
@@ -435,8 +444,19 @@ function HotelRoomBookingForm({ room }) {
             </label>
           </div>
 
+          <div className="mt-6 rounded-[1.5rem] bg-stone-50 p-5">
+            <div className="grid gap-4 text-sm sm:grid-cols-3">
+              <Summary label="Nights" value={nights > 0 ? nights : 'Select dates'} />
+              <Summary label="Guests" value={`${formData.guests} / ${room.capacity || 'many'}`} tone={guestLimitExceeded ? 'bad' : 'normal'} />
+              <Summary label="Estimated total" value={totalEstimate ? `EUR ${totalEstimate.toLocaleString()}` : 'After approval'} />
+            </div>
+            {guestLimitExceeded && <p className="mt-4 text-sm font-medium text-red-700">Guest count is above this room capacity.</p>}
+            {formData.checkIn && formData.checkOut && nights <= 0 && <p className="mt-4 text-sm font-medium text-red-700">Check-out must be after check-in.</p>}
+            <p className="mt-4 text-xs leading-5 text-stone-500">This total is an estimate from the nightly room price. Final confirmation is handled by Palma 5 after approval.</p>
+          </div>
+
           <div className="mt-7 flex flex-col gap-4 sm:flex-row sm:items-center">
-            <button type="submit" disabled={status === 'submitting' || status === 'success'} className="rounded-full bg-emerald-900 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-70">
+            <button type="submit" disabled={!canSubmit} className="rounded-full bg-emerald-900 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-900/20 transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-70">
               {status === 'submitting' ? 'Sending request...' : status === 'success' ? 'Request sent' : 'Request approval'}
             </button>
             {status === 'success' && <p className="text-sm font-medium text-emerald-700">Room request sent. Admin approval is pending.</p>}
@@ -446,6 +466,23 @@ function HotelRoomBookingForm({ room }) {
       </div>
     </section>
   )
+}
+
+function Summary({ label, value, tone = 'normal' }) {
+  return (
+    <div>
+      <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">{label}</p>
+      <p className={`mt-1 font-semibold ${tone === 'bad' ? 'text-red-700' : 'text-stone-950'}`}>{value}</p>
+    </div>
+  )
+}
+
+function calculateNights(checkIn, checkOut) {
+  if (!checkIn || !checkOut) return 0
+  const start = new Date(`${checkIn}T00:00:00`)
+  const end = new Date(`${checkOut}T00:00:00`)
+  const diff = end.getTime() - start.getTime()
+  return diff > 0 ? Math.round(diff / 86400000) : 0
 }
 
 function Field({ icon: Icon, label, children }) {

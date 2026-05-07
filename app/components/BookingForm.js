@@ -18,6 +18,7 @@ const baseFields = {
 }
 
 export default function BookingForm({ type, title, description, submitLabel, details = [], selectedRoom = null }) {
+  const today = new Date().toISOString().slice(0, 10)
   const getInitialData = () => ({
     ...baseFields,
     type,
@@ -49,6 +50,7 @@ export default function BookingForm({ type, title, description, submitLabel, det
         body: JSON.stringify({
           ...formData,
           guests: Number(formData.guests),
+          status: 'pending',
           createdAt: new Date().toISOString(),
         }),
       })
@@ -113,7 +115,7 @@ export default function BookingForm({ type, title, description, submitLabel, det
               <input type="number" name="guests" value={formData.guests} onChange={handleChange} min="1" required className="field-input" />
             </Field>
             <Field icon={CalendarDays} label="Date">
-              <input type="date" name="date" value={formData.date} onChange={handleChange} required className="field-input" />
+              <input type="date" name="date" value={formData.date} onChange={handleChange} min={today} required className="field-input" />
             </Field>
             <Field icon={Clock} label="Time">
               <input type="time" name="time" value={formData.time} onChange={handleChange} required className="field-input" />
@@ -184,7 +186,7 @@ export default function BookingForm({ type, title, description, submitLabel, det
             >
               {status === 'submitting' ? 'Sending request...' : submitLabel}
             </button>
-            {status === 'success' && <p className="text-sm font-medium text-emerald-700">Request sent. We will confirm shortly.</p>}
+            {status === 'success' && <p className="text-sm font-medium text-emerald-700">Request sent. Palma 5 will confirm shortly.</p>}
             {status === 'error' && <p className="text-sm font-medium text-red-700">Something went wrong. Please try again.</p>}
           </div>
         </form>

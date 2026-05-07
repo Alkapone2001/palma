@@ -21,7 +21,9 @@ export default function Contact() {
           <section className="rounded-[2rem] border border-stone-200 bg-white p-8 shadow-xl shadow-stone-200/60">
             <h2 className="text-2xl font-semibold text-stone-950">Visit us</h2>
             <div className="mt-8 space-y-5 text-stone-700">
-              <p className="flex gap-3"><MapPin className="mt-1 h-5 w-5 text-emerald-800" />Spadici 54, 52440, Porec, Croatia</p>
+              <a href="https://www.google.com/maps/search/?api=1&query=Spadici%2054%2C%2052440%2C%20Porec%2C%20Croatia" target="_blank" rel="noreferrer" className="flex gap-3 hover:text-emerald-900">
+                <MapPin className="mt-1 h-5 w-5 text-emerald-800" />Spadici 54, 52440, Porec, Croatia
+              </a>
               <a href="https://www.instagram.com/pizzeria.palma5?igsh=MWs4aHVtd201ZHR4cQ==" target="_blank" rel="noreferrer" className="flex gap-3 hover:text-emerald-900">
                 <Instagram className="mt-1 h-5 w-5 text-emerald-800" />@pizzeria.palma5
               </a>

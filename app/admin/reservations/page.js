@@ -129,6 +129,8 @@ function ReservationCard({ reservation, onApprove, onDecline }) {
           <Detail label="Check-out" value={reservation.checkOut} />
           <Detail label="Adults" value={reservation.adults} />
           <Detail label="Children" value={reservation.children} />
+          <Detail label="Nights" value={reservation.nights} />
+          <Detail label="Estimated total" value={reservation.estimatedTotal ? `EUR ${Number(reservation.estimatedTotal).toLocaleString()}` : ''} />
         </div>
       )}
 

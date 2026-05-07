@@ -261,7 +261,7 @@ function RoomAdminCard({ room, onToggle, onDelete }) {
           Up to {room.capacity} guests
         </p>
         {room.priceLabel && <p className="mt-2 text-sm font-semibold text-emerald-900">{room.priceLabel}</p>}
-        {room.price && <p className="mt-2 text-sm font-semibold text-emerald-900">${Number(room.price).toLocaleString()} {room.priceUnit || 'per night'}</p>}
+        {room.price && <p className="mt-2 text-sm font-semibold text-emerald-900">EUR {Number(room.price).toLocaleString()} {room.priceUnit || 'per night'}</p>}
         <p className="mt-4 line-clamp-3 leading-7 text-stone-600">{room.description}</p>
         {details.length > 0 && <p className="mt-3 text-sm text-stone-500">{details.length} detail{details.length === 1 ? '' : 's'} added</p>}
         <div className="mt-6 flex flex-wrap gap-3">

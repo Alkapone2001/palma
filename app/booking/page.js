@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, DoorOpen, Utensils } from 'lucide-react'
+import { ArrowRight, CheckCircle2, DoorOpen, Utensils } from 'lucide-react'
 import Header from '../components/Header'
 
 const options = [
@@ -57,6 +57,18 @@ export default function Booking() {
                 </span>
               </div>
             </Link>
+          ))}
+        </div>
+        <div className="mx-auto mt-8 grid max-w-7xl gap-4 rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-xl shadow-stone-200/60 md:grid-cols-3">
+          {[
+            'Restaurant tables and hotel rooms use separate forms.',
+            'Room bookings stay pending until admin approval.',
+            'Guests receive clear pricing and details before sending a request.',
+          ].map((item) => (
+            <p key={item} className="flex gap-3 text-sm leading-6 text-stone-700">
+              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-700" />
+              {item}
+            </p>
           ))}
         </div>
       </main>

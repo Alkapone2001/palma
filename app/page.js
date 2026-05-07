@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, CalendarCheck, DoorOpen, Flame, GlassWater, MapPin, Utensils } from 'lucide-react'
+import { ArrowRight, BedDouble, CalendarCheck, CheckCircle2, Clock, DoorOpen, Flame, GlassWater, MapPin, Star, Utensils, Wifi } from 'lucide-react'
 import Header from './components/Header'
 
 const heroImage = 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=2200&q=85'
@@ -13,6 +13,24 @@ const highlights = [
   { icon: CalendarCheck, label: 'Easy reservations', text: 'Book a table for dinner or request a hotel room for an overnight stay.' },
 ]
 
+const signatures = [
+  ['Palma 5 Pizza', 'Burrata, beefsteak, tomato, gold, cherry tomatoes'],
+  ['Palma 5 Fish Platter', 'Mussels, sea bream, scampi, calamari for two'],
+  ['Plata Palma 5', 'T-bone, beefsteak, cevapi, pljeskavica, chicken, vegetables'],
+]
+
+const stayBenefits = [
+  { icon: BedDouble, title: 'Rooms above the restaurant', text: 'Stay close after dinner, drinks, or a long day in Porec.' },
+  { icon: Wifi, title: 'Comfort essentials', text: 'Room details such as Wi-Fi, private bathroom, breakfast, and air conditioning are shown before request.' },
+  { icon: CheckCircle2, title: 'Approval before confirmation', text: 'Room requests stay pending until admin confirms availability.' },
+]
+
+const faqs = [
+  ['Are room bookings instant?', 'No. Room requests are sent as pending first, then Palma 5 approves or declines them from the admin dashboard.'],
+  ['Can I book only a restaurant table?', 'Yes. Table reservations are separate from hotel room bookings and use a shorter restaurant-focused form.'],
+  ['Where is Palma 5 located?', 'Spadici 54, 52440, Porec, Croatia.'],
+]
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-950">
@@ -23,7 +41,7 @@ export default function Home() {
         <div className="relative z-10 mx-auto flex min-h-[92vh] max-w-7xl items-end px-4 pb-16 pt-32 sm:px-6 lg:px-8">
           <div className="max-w-3xl text-white">
             <p className="text-sm font-semibold uppercase tracking-[0.28em] text-emerald-100">Palma 5</p>
-            <h1 className="mt-5 text-5xl font-semibold leading-[0.98] sm:text-7xl lg:text-8xl">A warm table for slow evenings.</h1>
+            <h1 className="mt-5 text-5xl font-semibold leading-[0.98] sm:text-7xl lg:text-8xl">Restaurant, rooms, and slow evenings.</h1>
             <p className="mt-6 max-w-2xl text-lg leading-8 text-white/82 sm:text-xl">
               Palma 5 is a restaurant and rooms in Porec, built around honest food, easy hospitality, and the quiet pleasure of being looked after well.
             </p>
@@ -33,9 +51,14 @@ export default function Home() {
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link href="/booking/room" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/35 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10">
-                Reserve a room
+                Request a room
                 <DoorOpen className="h-4 w-4" />
               </Link>
+            </div>
+            <div className="mt-8 flex flex-wrap gap-3 text-sm text-white/78">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur"><Star className="h-4 w-4 text-amber-200" />Palma 5 signatures</span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur"><Clock className="h-4 w-4 text-amber-200" />Restaurant open daily</span>
+              <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur"><MapPin className="h-4 w-4 text-amber-200" />Spadici, Porec</span>
             </div>
           </div>
         </div>
@@ -54,6 +77,14 @@ export default function Home() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="bg-emerald-950 px-4 py-16 text-white sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-8 md:grid-cols-3">
+          <Stat value="9" label="Menu categories" />
+          <Stat value="80+" label="Food and drink items" />
+          <Stat value="2" label="Ways to book: table or room" />
         </div>
       </section>
 
@@ -90,6 +121,54 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="border-y border-stone-200 bg-white px-4 py-24 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.75fr_1.25fr]">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Menu highlights</p>
+            <h2 className="mt-4 text-4xl font-semibold text-stone-950">The dishes people remember.</h2>
+            <p className="mt-5 leading-8 text-stone-600">
+              The full bilingual menu is available online, with prices for pizza, pasta, fish, grill, salads, soups, sides, drinks, coffee, beer, wine, and spirits.
+            </p>
+            <Link href="/menu" className="mt-7 inline-flex items-center gap-2 rounded-full bg-emerald-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800">
+              View full menu
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+          <div className="grid gap-4 md:grid-cols-3">
+            {signatures.map(([title, text]) => (
+              <div key={title} className="rounded-[1.5rem] border border-stone-200 p-6">
+                <Star className="h-5 w-5 text-amber-500" />
+                <h3 className="mt-5 text-xl font-semibold text-stone-950">{title}</h3>
+                <p className="mt-3 text-sm leading-6 text-stone-600">{text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="px-4 py-24 sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="max-w-3xl">
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Stay at Palma 5</p>
+            <h2 className="mt-4 text-4xl font-semibold text-stone-950">Dinner downstairs. A room upstairs.</h2>
+            <p className="mt-5 text-lg leading-8 text-stone-600">
+              Guests can view room photos, details, nightly price, and sleeping capacity before sending a stay request. Every room booking stays pending until the admin team approves it.
+            </p>
+          </div>
+          <div className="mt-10 grid gap-5 md:grid-cols-3">
+            {stayBenefits.map((benefit) => (
+              <div key={benefit.title} className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-xl shadow-stone-200/60">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-900">
+                  <benefit.icon className="h-5 w-5" />
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-stone-950">{benefit.title}</h3>
+                <p className="mt-3 leading-7 text-stone-600">{benefit.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       <section className="bg-stone-950 px-4 py-24 text-white sm:px-6 lg:px-8">
         <div className="mx-auto grid max-w-7xl gap-8 lg:grid-cols-2">
           <BookingCard
@@ -106,6 +185,32 @@ export default function Home() {
           />
         </div>
       </section>
+
+      <section className="bg-white px-4 py-24 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.7fr_1.3fr]">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Good to know</p>
+            <h2 className="mt-4 text-4xl font-semibold text-stone-950">Simple answers before guests book.</h2>
+          </div>
+          <div className="space-y-4">
+            {faqs.map(([question, answer]) => (
+              <div key={question} className="rounded-[1.5rem] border border-stone-200 p-6">
+                <h3 className="font-semibold text-stone-950">{question}</h3>
+                <p className="mt-2 leading-7 text-stone-600">{answer}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+function Stat({ value, label }) {
+  return (
+    <div className="rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-6">
+      <p className="text-4xl font-semibold">{value}</p>
+      <p className="mt-2 text-sm uppercase tracking-[0.18em] text-emerald-100">{label}</p>
     </div>
   )
 }

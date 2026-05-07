@@ -40,9 +40,11 @@ export default function Admin() {
     const roomReservations = reservations.filter((reservation) => reservation.type === 'room')
     const tableReservations = reservations.filter((reservation) => reservation.type === 'table')
     const availableRooms = rooms.filter((room) => room.isAvailable !== false)
+    const pendingReservations = reservations.filter((reservation) => (reservation.status || 'pending') === 'pending')
 
     return [
       { label: 'Reservations', value: reservations.length, icon: CalendarClock },
+      { label: 'Pending approval', value: pendingReservations.length, icon: CalendarClock },
       { label: 'Table requests', value: tableReservations.length, icon: Table2 },
       { label: 'Hotel requests', value: roomReservations.length, icon: DoorOpen },
       { label: 'Available rooms', value: availableRooms.length, icon: UsersRound },
@@ -85,7 +87,7 @@ export default function Admin() {
           </Link>
         </div>
 
-        <section className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <section className="mt-10 grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           {stats.map((stat) => (
             <div key={stat.label} className="rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-xl shadow-stone-200/60">
               <div className="flex items-center justify-between">
@@ -133,7 +135,7 @@ export default function Admin() {
                         </p>
                       </div>
                       <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-emerald-900">
-                        {reservation.type}
+                        {reservation.status || 'pending'}
                       </span>
                     </div>
                   </div>
