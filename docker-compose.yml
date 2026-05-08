@@ -1,17 +1,24 @@
 services:
   app:
     build: .
+    command: npm run dev
     ports:
       - "3002:3000"
     environment:
+      - NODE_ENV=development
       - MONGODB_URI=mongodb://mongo:27017/restaurant
       - NEXTAUTH_SECRET=your-secret-key
       - NEXTAUTH_URL=http://localhost:3002
+      - PALMA_ADMIN_PASSWORD=palma5admin
+      - PALMA_ADMIN_SESSION_TOKEN=palma5-local-admin
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - mongo
     volumes:
       - .:/app
       - /app/node_modules
+    restart: unless-stopped
 
   mongo:
     image: mongo:6.0
@@ -19,6 +26,7 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    restart: unless-stopped
 
 volumes:
   mongo_data:
