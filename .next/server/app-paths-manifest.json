@@ -1,9 +1,0 @@
-{
-  "/booking/table/page": "app/booking/table/page.js",
-  "/booking/page": "app/booking/page.js",
-  "/menu/page": "app/menu/page.js",
-  "/contact/page": "app/contact/page.js",
-  "/api/rooms/route": "app/api/rooms/route.js",
-  "/page": "app/page.js",
-  "/booking/room/page": "app/booking/room/page.js"
-}
