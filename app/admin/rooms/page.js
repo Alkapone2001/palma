@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, ImageOff, Pencil, Plus, Save, Trash2, UsersRound, X } from 'lucide-react'
+import { ArrowLeft, ImageOff, ImagePlus, Pencil, Plus, Save, Trash2, Upload, UsersRound, X } from 'lucide-react'
 
 const emptyRoom = {
   name: '',
@@ -29,6 +29,7 @@ export default function Rooms() {
   const [message, setMessage] = useState('')
   const [editingRoomId, setEditingRoomId] = useState('')
   const [editRoom, setEditRoom] = useState(emptyRoom)
+  const [uploading, setUploading] = useState({})
 
   useEffect(() => {
     fetchRooms()
@@ -60,6 +61,44 @@ export default function Rooms() {
       ...current,
       [name]: type === 'checkbox' ? checked : value,
     }))
+  }
+
+  const handleImageUpload = async (scope, files, multiple = false) => {
+    const selectedFiles = Array.from(files || [])
+
+    if (selectedFiles.length === 0) {
+      return
+    }
+
+    const key = `${scope}-${multiple ? 'gallery' : 'main'}`
+    const setRoom = scope === 'edit' ? setEditRoom : setNewRoom
+
+    setUploading((current) => ({ ...current, [key]: true }))
+    setMessage('')
+
+    try {
+      const imageUrls = await uploadRoomImages(selectedFiles)
+
+      setRoom((current) => {
+        if (multiple) {
+          return {
+            ...current,
+            galleryImages: appendGalleryImages(current.galleryImages, imageUrls),
+          }
+        }
+
+        return {
+          ...current,
+          imageUrl: imageUrls[0] || current.imageUrl,
+        }
+      })
+
+      setMessage(multiple ? 'Gallery images uploaded.' : 'Room image uploaded.')
+    } catch (error) {
+      setMessage(error.message || 'Failed to upload image.')
+    } finally {
+      setUploading((current) => ({ ...current, [key]: false }))
+    }
   }
 
   const handleAddRoom = async (event) => {
@@ -199,14 +238,19 @@ export default function Rooms() {
               <span className="mb-2 block text-sm font-semibold text-stone-800">Capacity</span>
               <input type="number" name="capacity" value={newRoom.capacity} onChange={handleChange} min="1" required className="field-input" />
             </label>
-            <label>
-              <span className="mb-2 block text-sm font-semibold text-stone-800">Image URL</span>
-              <input type="url" name="imageUrl" value={newRoom.imageUrl} onChange={handleChange} className="field-input" placeholder="https://..." />
-            </label>
-            <label>
-              <span className="mb-2 block text-sm font-semibold text-stone-800">Gallery image URLs</span>
-              <textarea name="galleryImages" value={newRoom.galleryImages} onChange={handleChange} rows="3" className="field-input resize-none" placeholder={'https://...\nhttps://...'} />
-            </label>
+            <ImageUploadField
+              label="Main room photo"
+              imageUrl={newRoom.imageUrl}
+              uploading={uploading['new-main']}
+              onUpload={(files) => handleImageUpload('new', files)}
+              onClear={() => setNewRoom((current) => ({ ...current, imageUrl: '' }))}
+            />
+            <GalleryUploadField
+              value={newRoom.galleryImages}
+              uploading={uploading['new-gallery']}
+              onUpload={(files) => handleImageUpload('new', files, true)}
+              onClear={() => setNewRoom((current) => ({ ...current, galleryImages: '' }))}
+            />
             <label>
               <span className="mb-2 block text-sm font-semibold text-stone-800">Room category</span>
               <input name="category" value={newRoom.category} onChange={handleChange} className="field-input" placeholder="Standard double room" />
@@ -272,6 +316,10 @@ export default function Rooms() {
                   editRoom={editRoom}
                   saving={saving}
                   onEditChange={handleEditChange}
+                  uploading={uploading}
+                  onImageUpload={handleImageUpload}
+                  onEditImageClear={() => setEditRoom((current) => ({ ...current, imageUrl: '' }))}
+                  onEditGalleryClear={() => setEditRoom((current) => ({ ...current, galleryImages: '' }))}
                   onStartEdit={() => handleStartEdit(room)}
                   onCancelEdit={handleCancelEdit}
                   onUpdate={handleUpdateRoom}
@@ -287,7 +335,7 @@ export default function Rooms() {
   )
 }
 
-function RoomAdminCard({ room, editing, editRoom, saving, onEditChange, onStartEdit, onCancelEdit, onUpdate, onToggle, onDelete }) {
+function RoomAdminCard({ room, editing, editRoom, saving, onEditChange, uploading, onImageUpload, onEditImageClear, onEditGalleryClear, onStartEdit, onCancelEdit, onUpdate, onToggle, onDelete }) {
   const details = Array.isArray(room.details) ? room.details : []
 
   if (editing) {
@@ -311,7 +359,14 @@ function RoomAdminCard({ room, editing, editRoom, saving, onEditChange, onStartE
             </div>
           </div>
 
-          <RoomFields room={editRoom} onChange={onEditChange} />
+          <RoomFields
+            room={editRoom}
+            onChange={onEditChange}
+            uploading={uploading}
+            onImageUpload={onImageUpload}
+            onImageClear={onEditImageClear}
+            onGalleryClear={onEditGalleryClear}
+          />
 
           <label className="mt-6 flex items-center gap-3 text-sm font-semibold text-stone-800">
             <input type="checkbox" name="isAvailable" checked={editRoom.isAvailable} onChange={onEditChange} className="h-5 w-5 rounded border-stone-300 text-emerald-900 focus:ring-emerald-900" />
@@ -362,7 +417,7 @@ function RoomAdminCard({ room, editing, editRoom, saving, onEditChange, onStartE
   )
 }
 
-function RoomFields({ room, onChange }) {
+function RoomFields({ room, onChange, uploading, onImageUpload, onImageClear, onGalleryClear }) {
   return (
     <div className="mt-6 grid gap-5 md:grid-cols-2">
       <label>
@@ -373,14 +428,19 @@ function RoomFields({ room, onChange }) {
         <span className="mb-2 block text-sm font-semibold text-stone-800">Capacity</span>
         <input type="number" name="capacity" value={room.capacity} onChange={onChange} min="1" required className="field-input" />
       </label>
-      <label>
-        <span className="mb-2 block text-sm font-semibold text-stone-800">Image URL</span>
-        <input type="url" name="imageUrl" value={room.imageUrl} onChange={onChange} className="field-input" placeholder="https://..." />
-      </label>
-      <label>
-        <span className="mb-2 block text-sm font-semibold text-stone-800">Gallery image URLs</span>
-        <textarea name="galleryImages" value={room.galleryImages} onChange={onChange} rows="3" className="field-input resize-none" placeholder={'https://...\nhttps://...'} />
-      </label>
+      <ImageUploadField
+        label="Main room photo"
+        imageUrl={room.imageUrl}
+        uploading={uploading?.['edit-main']}
+        onUpload={(files) => onImageUpload('edit', files)}
+        onClear={onImageClear}
+      />
+      <GalleryUploadField
+        value={room.galleryImages}
+        uploading={uploading?.['edit-gallery']}
+        onUpload={(files) => onImageUpload('edit', files, true)}
+        onClear={onGalleryClear}
+      />
       <label>
         <span className="mb-2 block text-sm font-semibold text-stone-800">Room category</span>
         <input name="category" value={room.category} onChange={onChange} className="field-input" placeholder="Standard double room" />
@@ -421,6 +481,91 @@ function RoomFields({ room, onChange }) {
   )
 }
 
+function ImageUploadField({ label, imageUrl, uploading, onUpload, onClear }) {
+  return (
+    <div>
+      <span className="mb-2 block text-sm font-semibold text-stone-800">{label}</span>
+      <div className="overflow-hidden rounded-2xl border border-stone-200 bg-stone-50">
+        <div className="relative h-40 bg-stone-200 bg-cover bg-center" style={imageUrl ? { backgroundImage: `url(${imageUrl})` } : undefined}>
+          {!imageUrl && (
+            <div className="flex h-full items-center justify-center text-stone-500">
+              <ImagePlus className="h-9 w-9" />
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-emerald-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800">
+            <Upload className="h-4 w-4" />
+            {uploading ? 'Uploading...' : imageUrl ? 'Replace photo' : 'Upload photo'}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              disabled={uploading}
+              onChange={(event) => {
+                onUpload(event.target.files)
+                event.target.value = ''
+              }}
+              className="sr-only"
+            />
+          </label>
+          {imageUrl && (
+            <button type="button" onClick={onClear} className="inline-flex items-center justify-center gap-2 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-white">
+              <X className="h-4 w-4" />
+              Remove
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function GalleryUploadField({ value, uploading, onUpload, onClear }) {
+  const images = parseGalleryImages(value)
+
+  return (
+    <div>
+      <span className="mb-2 block text-sm font-semibold text-stone-800">Gallery photos</span>
+      <div className="rounded-2xl border border-stone-200 bg-stone-50 p-4">
+        {images.length > 0 ? (
+          <div className="grid grid-cols-3 gap-2">
+            {images.map((image, index) => (
+              <div key={`${image}-${index}`} className="aspect-square rounded-xl bg-stone-200 bg-cover bg-center" style={{ backgroundImage: `url(${image})` }} />
+            ))}
+          </div>
+        ) : (
+          <div className="flex h-32 items-center justify-center rounded-xl bg-stone-200 text-stone-500">
+            <ImagePlus className="h-8 w-8" />
+          </div>
+        )}
+        <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <label className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-full bg-emerald-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-800">
+            <Upload className="h-4 w-4" />
+            {uploading ? 'Uploading...' : 'Upload gallery'}
+            <input
+              type="file"
+              accept="image/jpeg,image/png,image/webp,image/gif"
+              multiple
+              disabled={uploading}
+              onChange={(event) => {
+                onUpload(event.target.files)
+                event.target.value = ''
+              }}
+              className="sr-only"
+            />
+          </label>
+          {images.length > 0 && (
+            <button type="button" onClick={onClear} className="inline-flex items-center justify-center gap-2 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-white">
+              <X className="h-4 w-4" />
+              Clear gallery
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function normalizeRoomForm(room) {
   return {
     ...room,
@@ -445,4 +590,33 @@ function roomToForm(room) {
     details: Array.isArray(room.details) ? room.details.join('\n') : room.details || '',
     isAvailable: room.isAvailable !== false,
   }
+}
+
+function parseGalleryImages(value) {
+  return String(value || '')
+    .split('\n')
+    .map((image) => image.trim())
+    .filter(Boolean)
+}
+
+function appendGalleryImages(currentImages, newImages) {
+  return [...parseGalleryImages(currentImages), ...newImages].join('\n')
+}
+
+async function uploadRoomImages(files) {
+  const formData = new FormData()
+  files.forEach((file) => formData.append('images', file))
+
+  const response = await fetch('/api/uploads/rooms', {
+    method: 'POST',
+    body: formData,
+  })
+
+  const data = await response.json()
+
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to upload image.')
+  }
+
+  return Array.isArray(data.images) ? data.images : []
 }
