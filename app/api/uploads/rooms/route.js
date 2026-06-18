@@ -1,6 +1,7 @@
 import { mkdir, writeFile } from 'fs/promises'
 import path from 'path'
 import { randomUUID } from 'crypto'
+import { put } from '@vercel/blob'
 import { isAdminRequest, unauthorized } from '../../../lib/adminAuth'
 
 export const runtime = 'nodejs'
@@ -30,8 +31,6 @@ export async function POST(request) {
       return Response.json({ error: 'At least one image is required' }, { status: 400 })
     }
 
-    await mkdir(UPLOAD_DIR, { recursive: true })
-
     const uploaded = []
 
     for (const file of files) {
@@ -47,8 +46,7 @@ export async function POST(request) {
 
       const name = createFileName(file.name, extension)
       const bytes = await file.arrayBuffer()
-      await writeFile(path.join(UPLOAD_DIR, name), Buffer.from(bytes))
-      uploaded.push(`${PUBLIC_PATH}/${name}`)
+      uploaded.push(await uploadRoomImage(name, Buffer.from(bytes), file.type))
     }
 
     return Response.json({ images: uploaded })
@@ -56,6 +54,22 @@ export async function POST(request) {
     console.error(error)
     return Response.json({ error: 'Failed to upload room images' }, { status: 500 })
   }
+}
+
+async function uploadRoomImage(name, body, contentType) {
+  if (process.env.BLOB_READ_WRITE_TOKEN) {
+    const blob = await put(`rooms/${name}`, body, {
+      access: 'public',
+      contentType,
+      addRandomSuffix: false,
+    })
+
+    return blob.url
+  }
+
+  await mkdir(UPLOAD_DIR, { recursive: true })
+  await writeFile(path.join(UPLOAD_DIR, name), body)
+  return `${PUBLIC_PATH}/${name}`
 }
 
 function createFileName(originalName, extension) {

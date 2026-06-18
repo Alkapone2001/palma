@@ -22,11 +22,11 @@ const signatures = [
 const stayBenefits = [
   { icon: BedDouble, title: 'Rooms above the restaurant', text: 'Stay close after dinner, drinks, or a long day in Porec.' },
   { icon: Wifi, title: 'Comfort essentials', text: 'Room details such as Wi-Fi, private bathroom, breakfast, and air conditioning are shown before request.' },
-  { icon: CheckCircle2, title: 'Approval before confirmation', text: 'Room requests stay pending until admin confirms availability.' },
+  { icon: CheckCircle2, title: 'Approval before confirmation', text: 'Room requests stay pending until Palma 5 confirms availability.' },
 ]
 
 const faqs = [
-  ['Are room bookings instant?', 'No. Room requests are sent as pending first, then Palma 5 approves or declines them from the admin dashboard.'],
+  ['Are room bookings instant?', 'No. Room requests are sent as pending first, then Palma 5 confirms or declines them after checking availability.'],
   ['Can I book only a restaurant table?', 'Yes. Table reservations are separate from hotel room bookings and use a shorter restaurant-focused form.'],
   ['Where is Palma 5 located?', 'Spadici 54, 52440, Porec, Croatia.'],
 ]
@@ -152,7 +152,7 @@ export default function Home() {
             <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Stay at Palma 5</p>
             <h2 className="mt-4 text-4xl font-semibold text-stone-950">Dinner downstairs. A room upstairs.</h2>
             <p className="mt-5 text-lg leading-8 text-stone-600">
-              Guests can view room photos, details, nightly price, and sleeping capacity before sending a stay request. Every room booking stays pending until the admin team approves it.
+              Guests can view room photos, details, nightly price, and sleeping capacity before sending a stay request. Every room booking stays pending until Palma 5 confirms availability.
             </p>
           </div>
           <div className="mt-10 grid gap-5 md:grid-cols-3">

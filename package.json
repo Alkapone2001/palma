@@ -2,6 +2,9 @@
   "name": "restaurant-website",
   "version": "1.0.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
     "build": "next build",
@@ -9,6 +12,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@vercel/blob": "^2.4.0",
     "autoprefixer": "^10.4.0",
     "lucide-react": "^0.294.0",
     "mongodb": "^6.0.0",

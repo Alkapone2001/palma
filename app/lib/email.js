@@ -2,11 +2,15 @@ const smtpConfigured = Boolean(
   process.env.SMTP_HOST &&
     process.env.SMTP_PORT &&
     process.env.SMTP_USER &&
-    process.env.SMTP_PASS &&
-    process.env.RESERVATION_EMAIL_TO,
+    process.env.SMTP_PASS,
 )
 
 export async function sendReservationCreatedEmail(reservation) {
+  if (!process.env.RESERVATION_EMAIL_TO) {
+    console.info('Admin reservation email skipped. Configure RESERVATION_EMAIL_TO.')
+    return { sent: false, skipped: true }
+  }
+
   const subject = reservation.type === 'room'
     ? `New room request: ${reservation.roomName}`
     : `New table request: ${reservation.date} ${reservation.time}`
@@ -18,26 +22,39 @@ export async function sendReservationCreatedEmail(reservation) {
   })
 }
 
+export async function sendReservationReceivedEmail(reservation) {
+  if (!reservation.email) {
+    return { sent: false, skipped: true }
+  }
+
+  return sendEmail({
+    to: reservation.email,
+    subject: 'Palma 5 received your reservation request',
+    text: buildGuestReceivedText(reservation),
+  })
+}
+
 export async function sendReservationStatusEmail(reservation, status) {
   if (!reservation.email) {
     return { sent: false, skipped: true }
   }
 
-  const approved = status === 'approved'
-  const subject = approved
-    ? 'Your Palma 5 reservation is confirmed'
-    : 'Your Palma 5 reservation request'
+  const statusMessage = getGuestStatusMessage(status)
+
+  if (!statusMessage) {
+    return { sent: false, skipped: true }
+  }
 
   return sendEmail({
     to: reservation.email,
-    subject,
-    text: buildGuestStatusText(reservation, status),
+    subject: statusMessage.subject,
+    text: buildGuestStatusText(reservation, statusMessage),
   })
 }
 
 async function sendEmail({ to, subject, text }) {
   if (!smtpConfigured) {
-    console.info('Email skipped. Configure SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and RESERVATION_EMAIL_TO.')
+    console.info('Email skipped. Configure SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.')
     return { sent: false, skipped: true }
   }
 
@@ -94,17 +111,36 @@ function buildAdminReservationText(reservation) {
   return lines.join('\n')
 }
 
-function buildGuestStatusText(reservation, status) {
-  const approved = status === 'approved'
+function buildGuestReceivedText(reservation) {
   const lines = [
     `Hello ${reservation.name},`,
     '',
-    approved
-      ? 'Your Palma 5 reservation has been approved.'
-      : 'Thank you for your request. We are sorry, but this reservation could not be confirmed.',
+    'Thank you. Palma 5 received your reservation request.',
+    'We will check availability and confirm with you soon.',
     '',
   ]
 
+  appendReservationDetails(lines, reservation)
+
+  lines.push('', 'Palma 5', 'Spadici 54, 52440, Porec, Croatia')
+  return lines.join('\n')
+}
+
+function buildGuestStatusText(reservation, statusMessage) {
+  const lines = [
+    `Hello ${reservation.name},`,
+    '',
+    statusMessage.body,
+    '',
+  ]
+
+  appendReservationDetails(lines, reservation)
+
+  lines.push('', 'Palma 5', 'Spadici 54, 52440, Porec, Croatia')
+  return lines.join('\n')
+}
+
+function appendReservationDetails(lines, reservation) {
   if (reservation.type === 'room') {
     lines.push(
       `Room: ${reservation.roomName}`,
@@ -114,7 +150,29 @@ function buildGuestStatusText(reservation, status) {
   } else {
     lines.push(`Table date: ${reservation.date}`, `Time: ${reservation.time}`)
   }
+}
 
-  lines.push('', 'Palma 5', 'Spadici 54, 52440, Porec, Croatia')
-  return lines.join('\n')
+function getGuestStatusMessage(status) {
+  if (status === 'approved') {
+    return {
+      subject: 'Your Palma 5 reservation is confirmed',
+      body: 'Your Palma 5 reservation has been confirmed.',
+    }
+  }
+
+  if (status === 'declined') {
+    return {
+      subject: 'Your Palma 5 reservation request',
+      body: 'Thank you for your request. We are sorry, but this reservation could not be confirmed.',
+    }
+  }
+
+  if (status === 'cancelled') {
+    return {
+      subject: 'Your Palma 5 reservation was cancelled',
+      body: 'Your Palma 5 reservation has been cancelled.',
+    }
+  }
+
+  return null
 }

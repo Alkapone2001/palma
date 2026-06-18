@@ -62,7 +62,6 @@ export default function RootLayout({ children }) {
           </div>
           <div className="mx-auto mt-10 flex max-w-7xl flex-col gap-3 border-t border-stone-200 pt-6 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between">
             <p>&copy; 2026 Palma 5. All rights reserved.</p>
-            <Link href="/admin" className="font-medium text-stone-700 hover:text-emerald-900">Admin</Link>
           </div>
         </footer>
       </body>

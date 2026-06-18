@@ -79,7 +79,7 @@ export default function RoomBookingClient() {
               <DoorOpen className="h-10 w-10 text-emerald-800" />
               <h2 className="mt-5 text-2xl font-semibold text-stone-950">No rooms are published yet.</h2>
               <p className="mt-3 max-w-2xl leading-7 text-stone-600">
-                Add hotel rooms from the admin page and mark them available. They will appear here with photos, sleeping capacity, prices, and details.
+                Rooms will appear here with photos, sleeping capacity, prices, and details once Palma 5 publishes them.
               </p>
             </div>
           )}
@@ -307,7 +307,7 @@ function RoomDetail({ room, onBack, onReserve }) {
             <button type="button" onClick={onReserve} className="mt-7 w-full rounded-full bg-emerald-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800">
               Request this room
             </button>
-            <p className="mt-4 text-center text-xs leading-5 text-stone-500">Room stays are requested first. Admin approval confirms the booking.</p>
+            <p className="mt-4 text-center text-xs leading-5 text-stone-500">Room stays are requested first. Palma 5 confirmation completes the booking.</p>
           </aside>
         </div>
       </div>
@@ -420,7 +420,7 @@ function HotelRoomBookingForm({ room }) {
         throw new Error(data.error || 'Room booking failed')
       }
       setStatus('success')
-      setMessage('Room request sent. Admin approval is pending.')
+      setMessage('Room request sent. Palma 5 confirmation is pending.')
     } catch (error) {
       setStatus('error')
       setMessage(error.message || 'Something went wrong. Please try again.')
@@ -434,7 +434,7 @@ function HotelRoomBookingForm({ room }) {
           <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Room stay</p>
           <h2 className="mt-4 text-4xl font-semibold text-stone-950">Request your stay</h2>
           <p className="mt-5 text-lg leading-8 text-stone-600">
-            Send your check-in and check-out dates. The admin team will approve the request once the room is confirmed available.
+            Send your check-in and check-out dates. Palma 5 will confirm the request once the room is available.
           </p>
           <div className="mt-8 rounded-[1.5rem] bg-emerald-950 p-5 text-white">
             <p className="text-sm font-semibold uppercase tracking-[0.2em] text-emerald-100">Selected room</p>

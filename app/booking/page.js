@@ -16,7 +16,7 @@ const options = [
     href: '/booking/room',
     title: 'Book a hotel room',
     label: 'Rooms to sleep',
-    text: 'Choose this for overnight stays at Palma 5. View room details, price, and request approval from the admin team.',
+    text: 'Choose this for overnight stays at Palma 5. View room details, price, and request confirmation from the team.',
     image: 'https://images.unsplash.com/photo-1544148103-0773bf10d330?auto=format&fit=crop&w=1200&q=85',
     icon: DoorOpen,
   },
@@ -62,7 +62,7 @@ export default function Booking() {
         <div className="mx-auto mt-8 grid max-w-7xl gap-4 rounded-[1.5rem] border border-stone-200 bg-white p-6 shadow-xl shadow-stone-200/60 md:grid-cols-3">
           {[
             'Restaurant tables and hotel rooms use separate forms.',
-            'Room bookings stay pending until admin approval.',
+            'Room bookings stay pending until Palma 5 confirms availability.',
             'Guests receive clear pricing and details before sending a request.',
           ].map((item) => (
             <p key={item} className="flex gap-3 text-sm leading-6 text-stone-700">

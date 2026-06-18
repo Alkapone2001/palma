@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb'
 import { isAdminRequest, unauthorized } from '../../lib/adminAuth'
 import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
-import { sendReservationCreatedEmail, sendReservationStatusEmail } from '../../lib/email'
+import { sendReservationCreatedEmail, sendReservationReceivedEmail, sendReservationStatusEmail } from '../../lib/email'
 
 const OPEN_TIME = '08:00'
 const CLOSE_TIME = '23:59'
@@ -57,7 +57,10 @@ export async function POST(request) {
 
     const result = await reservations.insertOne(booking)
     sendReservationCreatedEmail(booking).catch((emailError) => {
-      console.error('Failed to send reservation email:', emailError)
+      console.error('Failed to send admin reservation email:', emailError)
+    })
+    sendReservationReceivedEmail(booking).catch((emailError) => {
+      console.error('Failed to send guest reservation email:', emailError)
     })
 
     return Response.json({ message: 'Booking created', id: result.insertedId })
