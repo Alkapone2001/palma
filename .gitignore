@@ -25,6 +25,8 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 *.archive
+mongodb-database-tools/
+mongodb-database-tools.zip
 
 # test and coverage output
 coverage/

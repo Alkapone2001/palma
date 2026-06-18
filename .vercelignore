@@ -1,0 +1,6 @@
+palma-restaurant.archive
+mongodb-database-tools.zip
+mongodb-database-tools/
+.next/
+.node/
+node_modules/
