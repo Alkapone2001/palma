@@ -3,6 +3,8 @@ import { isAdminRequest, unauthorized } from '../../lib/adminAuth'
 import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
 import { sendReservationCreatedEmail, sendReservationReceivedEmail, sendReservationStatusEmail } from '../../lib/email'
 
+export const dynamic = 'force-dynamic'
+
 const OPEN_TIME = '08:00'
 const CLOSE_TIME = '23:59'
 const LAST_TABLE_SEATING = '22:00'

@@ -24,6 +24,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+*.archive
 
 # test and coverage output
 coverage/
@@ -32,3 +33,4 @@ coverage/
 .DS_Store
 .idea/
 .vscode/
+.vercel

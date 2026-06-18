@@ -1,5 +1,7 @@
 import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request) {
   const client = createMongoClient()
   const url = new URL(request.url)

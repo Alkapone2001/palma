@@ -2,6 +2,8 @@ import { ObjectId } from 'mongodb'
 import { isAdminRequest, unauthorized } from '../../lib/adminAuth'
 import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(request) {
   if (!isAdminRequest(request)) {
     return unauthorized()
