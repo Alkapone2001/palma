@@ -117,14 +117,14 @@ export default function Rooms() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to add room')
+        throw new Error(await getApiError(response, 'Failed to add room.'))
       }
 
       setNewRoom(emptyRoom)
       setMessage('Room added.')
       fetchRooms()
     } catch (error) {
-      setMessage('Failed to add room.')
+      setMessage(error.message || 'Failed to add room.')
     } finally {
       setSaving(false)
     }
@@ -158,14 +158,14 @@ export default function Rooms() {
       })
 
       if (!response.ok) {
-        throw new Error('Failed to update room')
+        throw new Error(await getApiError(response, 'Failed to update room.'))
       }
 
       setMessage('Room updated.')
       handleCancelEdit()
       fetchRooms()
     } catch (error) {
-      setMessage('Failed to update room.')
+      setMessage(error.message || 'Failed to update room.')
     } finally {
       setSaving(false)
     }
@@ -178,9 +178,11 @@ export default function Rooms() {
       })
       if (response.ok) {
         fetchRooms()
+      } else {
+        throw new Error(await getApiError(response, 'Failed to delete room.'))
       }
     } catch (error) {
-      setMessage('Failed to delete room.')
+      setMessage(error.message || 'Failed to delete room.')
     }
   }
 
@@ -197,9 +199,11 @@ export default function Rooms() {
 
       if (response.ok) {
         fetchRooms()
+      } else {
+        throw new Error(await getApiError(response, 'Failed to update room.'))
       }
     } catch (error) {
-      setMessage('Failed to update room.')
+      setMessage(error.message || 'Failed to update room.')
     }
   }
 
@@ -619,4 +623,9 @@ async function uploadRoomImages(files) {
   }
 
   return Array.isArray(data.images) ? data.images : []
+}
+
+async function getApiError(response, fallback) {
+  const data = await response.json().catch(() => null)
+  return data?.error || fallback
 }

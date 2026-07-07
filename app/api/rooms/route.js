@@ -15,7 +15,7 @@ export async function GET() {
     return Response.json(result)
   } catch (error) {
     console.error(error)
-    return Response.json({ error: 'Failed to fetch rooms' }, { status: 500 })
+    return roomApiError(error, 'Failed to fetch rooms')
   } finally {
     await client.close()
   }
@@ -65,7 +65,7 @@ export async function POST(request) {
     return Response.json({ message: 'Room created', id: result.insertedId })
   } catch (error) {
     console.error(error)
-    return Response.json({ error: 'Failed to create room' }, { status: 500 })
+    return roomApiError(error, 'Failed to create room')
   } finally {
     await client.close()
   }
@@ -114,7 +114,7 @@ export async function PUT(request) {
     return Response.json({ message: 'Room updated' })
   } catch (error) {
     console.error(error)
-    return Response.json({ error: 'Failed to update room' }, { status: 500 })
+    return roomApiError(error, 'Failed to update room')
   } finally {
     await client.close()
   }
@@ -137,8 +137,16 @@ export async function DELETE(request) {
     return Response.json({ message: 'Room deleted' })
   } catch (error) {
     console.error(error)
-    return Response.json({ error: 'Failed to delete room' }, { status: 500 })
+    return roomApiError(error, 'Failed to delete room')
   } finally {
     await client.close()
   }
+}
+
+function roomApiError(error, fallback) {
+  const message = process.env.NODE_ENV === 'production'
+    ? fallback
+    : `${fallback}: ${error.message}`
+
+  return Response.json({ error: message }, { status: 500 })
 }
