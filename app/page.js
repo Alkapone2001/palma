@@ -51,10 +51,16 @@ export default function Home() {
                 Book a table
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/booking/room" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/35 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10">
-                Request a room
-                <DoorOpen className="h-4 w-4" />
-              </Link>
+              <div className="flex flex-col gap-3">
+                <Link href="/booking/room" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/35 px-6 py-3 text-sm font-semibold text-white backdrop-blur transition hover:bg-white/10">
+                  Request a room
+                  <DoorOpen className="h-4 w-4" />
+                </Link>
+                <a href={reviewUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center gap-2 rounded-full border border-amber-200/60 bg-amber-200 px-6 py-3 text-sm font-semibold text-stone-950 transition hover:bg-amber-100">
+                  Leave a review
+                  <ExternalLink className="h-4 w-4" />
+                </a>
+              </div>
             </div>
             <div className="mt-8 flex flex-wrap gap-3 text-sm text-white/78">
               <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-2 backdrop-blur"><Star className="h-4 w-4 text-amber-200" />Palma 5 signatures</span>
