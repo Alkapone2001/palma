@@ -1,11 +1,12 @@
 import Link from 'next/link'
 import Image from 'next/image'
-import { ArrowRight, BedDouble, CalendarCheck, CheckCircle2, Clock, DoorOpen, Flame, GlassWater, MapPin, Star, Utensils, Wifi } from 'lucide-react'
+import { ArrowRight, BedDouble, CalendarCheck, CheckCircle2, Clock, DoorOpen, ExternalLink, Flame, GlassWater, MapPin, Star, Utensils, Wifi } from 'lucide-react'
 import Header from './components/Header'
 
 const heroImage = 'https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=2200&q=85'
 const diningImage = 'https://images.unsplash.com/photo-1514933651103-005eec06c04b?auto=format&fit=crop&w=1400&q=85'
 const roomImage = 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=1400&q=85'
+const reviewUrl = 'https://www.google.com/search?sca_esv=b4663fe979d5f511&sxsrf=APpeQnugvXm13cE9NQZ_ItzG3IeIWWcuqA:1783779685836&q=Restaurant+%26+Pizzeria+Palma+5&si=APenkKm7iecQ4G6P-TsbSMFKIQtv3EFIqRAFw-i8uEbk55Z-__asMecfCm70KdgLpeXKE4qQoTPJSXbJG1jSKvmk11RGyO1IxB1QP2q0ZzU1uZv4UKK8jEQ%3D&uds=AJ5uw19tc558UO76uNE3i9QYuudM97IoXnbRaq_I1bsFhNHuSkJ3YIHigrWbuddKesDe6heurL0JJgEQlv4GiP0b1TG29LWYGybPDjVtXT_FlZBk74UWHc3qzAD0Kt1yBll9nBr85YfM&sa=X&ved=2ahUKEwjgkKCU6cqVAxVnExAIHVFpAOAQ3PALegQIGRAE&biw=1280&bih=569&dpr=1.5'
 
 const highlights = [
   { icon: Flame, label: 'Seasonal cooking', text: 'Produce-led plates, warm service, and a menu that changes with what tastes best now.' },
@@ -183,6 +184,38 @@ export default function Home() {
             text="For guests who want to sleep at Palma 5 after dinner, travel, or a longer stay in town."
             href="/booking/room"
           />
+        </div>
+      </section>
+
+      <section id="reviews" className="border-b border-stone-200 bg-emerald-50 px-4 py-20 sm:px-6 lg:px-8">
+        <div className="mx-auto grid max-w-7xl gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:items-center">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-800">Guest reviews</p>
+            <h2 className="mt-4 text-4xl font-semibold text-stone-950">Share your Palma 5 experience.</h2>
+            <p className="mt-5 text-lg leading-8 text-stone-600">
+              Reviews help new guests choose their table, plan a stay, and find the dishes worth coming back for.
+            </p>
+          </div>
+          <div className="rounded-[1.5rem] border border-emerald-100 bg-white p-7 shadow-xl shadow-emerald-900/5">
+            <div className="flex flex-wrap gap-1 text-amber-500" aria-label="Five stars">
+              {[...Array(5)].map((_, index) => (
+                <Star key={index} className="h-6 w-6 fill-current" />
+              ))}
+            </div>
+            <h3 className="mt-6 text-2xl font-semibold text-stone-950">Leave a review on Google</h3>
+            <p className="mt-3 leading-7 text-stone-600">
+              Tap the button to open the Palma 5 profile, then choose reviews to share your rating and comment.
+            </p>
+            <a
+              href={reviewUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-7 inline-flex items-center justify-center gap-2 rounded-full bg-emerald-900 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800"
+            >
+              Leave a review
+              <ExternalLink className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </section>
 

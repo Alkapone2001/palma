@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Clock, Instagram, MapPin } from 'lucide-react'
+import { Clock, Instagram, MapPin, Star } from 'lucide-react'
 import './globals.css'
 
 export const metadata = {
@@ -28,6 +28,8 @@ const businessSchema = {
   hasMenu: '/menu',
 }
 
+const reviewUrl = 'https://www.google.com/search?sca_esv=b4663fe979d5f511&sxsrf=APpeQnugvXm13cE9NQZ_ItzG3IeIWWcuqA:1783779685836&q=Restaurant+%26+Pizzeria+Palma+5&si=APenkKm7iecQ4G6P-TsbSMFKIQtv3EFIqRAFw-i8uEbk55Z-__asMecfCm70KdgLpeXKE4qQoTPJSXbJG1jSKvmk11RGyO1IxB1QP2q0ZzU1uZv4UKK8jEQ%3D&uds=AJ5uw19tc558UO76uNE3i9QYuudM97IoXnbRaq_I1bsFhNHuSkJ3YIHigrWbuddKesDe6heurL0JJgEQlv4GiP0b1TG29LWYGybPDjVtXT_FlZBk74UWHc3qzAD0Kt1yBll9nBr85YfM&sa=X&ved=2ahUKEwjgkKCU6cqVAxVnExAIHVFpAOAQ3PALegQIGRAE&biw=1280&bih=569&dpr=1.5'
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
@@ -50,6 +52,9 @@ export default function RootLayout({ children }) {
                 </a>
                 <a href="https://www.instagram.com/pizzeria.palma5?igsh=MWs4aHVtd201ZHR4cQ==" target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-emerald-900">
                   <Instagram className="h-4 w-4 text-emerald-800" />@pizzeria.palma5
+                </a>
+                <a href={reviewUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3 hover:text-emerald-900">
+                  <Star className="h-4 w-4 text-emerald-800" />Leave a review
                 </a>
               </div>
             </div>
