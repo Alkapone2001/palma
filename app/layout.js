@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { Clock, Instagram, MapPin, Star } from 'lucide-react'
+import { reviewUrl } from './lib/links'
 import './globals.css'
 
 export const metadata = {
@@ -27,8 +28,6 @@ const businessSchema = {
   sameAs: ['https://www.instagram.com/pizzeria.palma5'],
   hasMenu: '/menu',
 }
-
-const reviewUrl = 'https://www.google.com/search?sca_esv=b4663fe979d5f511&sxsrf=APpeQnugvXm13cE9NQZ_ItzG3IeIWWcuqA:1783779685836&q=Restaurant+%26+Pizzeria+Palma+5&si=APenkKm7iecQ4G6P-TsbSMFKIQtv3EFIqRAFw-i8uEbk55Z-__asMecfCm70KdgLpeXKE4qQoTPJSXbJG1jSKvmk11RGyO1IxB1QP2q0ZzU1uZv4UKK8jEQ%3D&uds=AJ5uw19tc558UO76uNE3i9QYuudM97IoXnbRaq_I1bsFhNHuSkJ3YIHigrWbuddKesDe6heurL0JJgEQlv4GiP0b1TG29LWYGybPDjVtXT_FlZBk74UWHc3qzAD0Kt1yBll9nBr85YfM&sa=X&ved=2ahUKEwjgkKCU6cqVAxVnExAIHVFpAOAQ3PALegQIGRAE&biw=1280&bih=569&dpr=1.5'
 
 export default function RootLayout({ children }) {
   return (

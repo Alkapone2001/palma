@@ -222,8 +222,9 @@ const productTranslations = {
 const uiText = {
   en: {
     heroTitle: 'Food, drinks, and Palma signatures.',
-    heroText: 'Browse the full Palma 5 menu with prices, from pizza and pasta to seafood, grill plates, salads, sides, coffee, beer, wine, and spirits.',
+    heroText: 'Browse the full Palma 5 restaurant and pizzeria menu with prices. We also have a bar, comfortable rooms for overnight stays, and easy booking for tables or rooms.',
     search: 'Search menu...',
+    serviceNote: 'Palma 5 is a restaurant, pizzeria, bar, and rooms in Porec.',
     chooseCategory: 'Choose a category',
     chooseCategoryText: 'Start with a section, then browse only the dishes and drinks inside it.',
     backToCategories: 'All categories',
@@ -238,8 +239,9 @@ const uiText = {
   },
   hr: {
     heroTitle: 'Hrana, pice i Palma specijaliteti.',
-    heroText: 'Pregledajte cijeli Palma 5 meni s cijenama, od pizza i tjestenine do ribe, grilla, salata, priloga, kave, piva, vina i zestokih pica.',
+    heroText: 'Pregledajte cijeli Palma 5 restoran i pizzeria meni s cijenama. Imamo i bar, udobne sobe za nocenje te jednostavnu rezervaciju stolova ili soba.',
     search: 'Pretrazi jelovnik...',
+    serviceNote: 'Palma 5 je restoran, pizzeria, bar i sobe u Porecu.',
     chooseCategory: 'Odaberite kategoriju',
     chooseCategoryText: 'Krenite od kategorije, zatim pregledajte samo jela i pica unutar nje.',
     backToCategories: 'Sve kategorije',
@@ -254,8 +256,9 @@ const uiText = {
   },
   de: {
     heroTitle: 'Essen, Getraenke und Palma Spezialitaeten.',
-    heroText: 'Entdecken Sie die komplette Palma 5 Speisekarte mit Preisen, von Pizza und Pasta bis zu Fisch, Grillplatten, Salaten, Beilagen, Kaffee, Bier, Wein und Spirituosen.',
+    heroText: 'Entdecken Sie die komplette Palma 5 Restaurant- und Pizzeria-Speisekarte mit Preisen. Wir bieten auch eine Bar, komfortable Zimmer und einfache Buchung fuer Tische oder Zimmer.',
     search: 'Speisekarte suchen...',
+    serviceNote: 'Palma 5 ist Restaurant, Pizzeria, Bar und Zimmer in Porec.',
     chooseCategory: 'Kategorie auswaehlen',
     chooseCategoryText: 'Waehlen Sie zuerst eine Kategorie und sehen Sie danach nur die passenden Gerichte und Getraenke.',
     backToCategories: 'Alle Kategorien',
@@ -413,6 +416,12 @@ export default function Menu() {
           <p className="mt-5 max-w-2xl text-lg leading-8 text-white/70">
             {text.heroText}
           </p>
+          <div className="mt-6 flex flex-wrap gap-2 text-sm font-semibold text-white/85">
+            <span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Restaurant</span>
+            <span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Pizzeria</span>
+            <span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Bar</span>
+            <span className="rounded-full bg-white/10 px-4 py-2 backdrop-blur">Rooms</span>
+          </div>
         </div>
       </div>
 
@@ -431,6 +440,9 @@ export default function Menu() {
                 placeholder={text.search}
               />
             </label>
+            <p className="rounded-full bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-950 lg:max-w-sm">
+              {text.serviceNote}
+            </p>
             <div className="flex items-center gap-2 rounded-full border border-stone-200 bg-stone-50 p-1">
               <Languages className="ml-3 h-4 w-4 text-emerald-800" />
               {['en', 'hr', 'de'].map((option) => (

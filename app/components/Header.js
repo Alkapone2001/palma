@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { Star } from 'lucide-react'
+import { reviewUrl } from '../lib/links'
 
 const navItems = [
   { href: '/', label: 'Home' },
@@ -35,12 +37,24 @@ export default function Header({ theme = 'light' }) {
           ))}
         </nav>
 
-        <Link
-          href="/booking"
-          className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition ${isDark ? 'bg-white text-stone-950 hover:bg-stone-100' : 'bg-emerald-900 text-white hover:bg-emerald-800'}`}
-        >
-          Reserve
-        </Link>
+        <div className="flex items-center gap-2">
+          <a
+            href={reviewUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-semibold shadow-sm transition sm:px-4 ${isDark ? 'border border-amber-200/50 bg-amber-200 text-stone-950 hover:bg-amber-100' : 'border border-amber-200 bg-amber-100 text-stone-950 hover:bg-amber-200'}`}
+          >
+            <Star className="h-4 w-4" />
+            <span className="sm:hidden">Review</span>
+            <span className="hidden sm:inline">Leave a review</span>
+          </a>
+          <Link
+            href="/booking"
+            className={`rounded-full px-4 py-2 text-sm font-semibold shadow-sm transition ${isDark ? 'bg-white text-stone-950 hover:bg-stone-100' : 'bg-emerald-900 text-white hover:bg-emerald-800'}`}
+          >
+            Reserve
+          </Link>
+        </div>
       </div>
     </header>
   )
