@@ -4,6 +4,23 @@ import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
 
 export const dynamic = 'force-dynamic'
 
+const editableRoomFields = [
+  'name',
+  'description',
+  'capacity',
+  'imageUrl',
+  'galleryImages',
+  'category',
+  'size',
+  'bedType',
+  'price',
+  'priceUnit',
+  'priceNote',
+  'priceLabel',
+  'details',
+  'isAvailable',
+]
+
 export async function GET() {
   const client = createMongoClient()
 
@@ -31,30 +48,7 @@ export async function POST(request) {
   try {
     const body = await request.json()
     const room = {
-      name: body.name,
-      description: body.description,
-      capacity: Number(body.capacity || 1),
-      imageUrl: body.imageUrl || '',
-      galleryImages: Array.isArray(body.galleryImages)
-        ? body.galleryImages
-        : String(body.galleryImages || '')
-            .split('\n')
-            .map((image) => image.trim())
-            .filter(Boolean),
-      category: body.category || '',
-      size: body.size || '',
-      bedType: body.bedType || '',
-      price: body.price ? Number(body.price) : '',
-      priceUnit: body.priceUnit || 'per night',
-      priceNote: body.priceNote || '',
-      priceLabel: body.priceLabel || '',
-      details: Array.isArray(body.details)
-        ? body.details
-        : String(body.details || '')
-            .split('\n')
-            .map((detail) => detail.trim())
-            .filter(Boolean),
-      isAvailable: body.isAvailable !== false,
+      ...normalizeRoomData(body),
       createdAt: body.createdAt || new Date().toISOString(),
     }
 
@@ -80,37 +74,23 @@ export async function PUT(request) {
 
   try {
     const body = await request.json()
-    const { id, ...bodyData } = body
-    const updateData = {
-      ...bodyData,
-      ...(bodyData.capacity !== undefined ? { capacity: Number(bodyData.capacity) } : {}),
-      ...(bodyData.price !== undefined ? { price: bodyData.price ? Number(bodyData.price) : '' } : {}),
-      ...(bodyData.galleryImages !== undefined
-        ? {
-            galleryImages: Array.isArray(bodyData.galleryImages)
-              ? bodyData.galleryImages
-              : String(bodyData.galleryImages || '')
-                  .split('\n')
-                  .map((image) => image.trim())
-                  .filter(Boolean),
-          }
-        : {}),
-      ...(bodyData.details !== undefined
-        ? {
-            details: Array.isArray(bodyData.details)
-              ? bodyData.details
-              : String(bodyData.details || '')
-                  .split('\n')
-                  .map((detail) => detail.trim())
-                  .filter(Boolean),
-          }
-        : {}),
+    const { id } = body
+
+    if (!ObjectId.isValid(id)) {
+      return Response.json({ error: 'A valid room id is required' }, { status: 400 })
     }
+
+    const updateData = normalizeRoomData(body, { partial: true })
 
     await client.connect()
     const database = getRestaurantDb(client)
     const rooms = database.collection('rooms')
     const result = await rooms.updateOne({ _id: new ObjectId(id) }, { $set: updateData })
+
+    if (result.matchedCount === 0) {
+      return Response.json({ error: 'Room not found' }, { status: 404 })
+    }
+
     return Response.json({ message: 'Room updated' })
   } catch (error) {
     console.error(error)
@@ -130,10 +110,19 @@ export async function DELETE(request) {
   const id = url.searchParams.get('id')
 
   try {
+    if (!ObjectId.isValid(id)) {
+      return Response.json({ error: 'A valid room id is required' }, { status: 400 })
+    }
+
     await client.connect()
     const database = getRestaurantDb(client)
     const rooms = database.collection('rooms')
     const result = await rooms.deleteOne({ _id: new ObjectId(id) })
+
+    if (result.deletedCount === 0) {
+      return Response.json({ error: 'Room not found' }, { status: 404 })
+    }
+
     return Response.json({ message: 'Room deleted' })
   } catch (error) {
     console.error(error)
@@ -149,4 +138,53 @@ function roomApiError(error, fallback) {
     : `${fallback}: ${error.message}`
 
   return Response.json({ error: message }, { status: 500 })
+}
+
+function normalizeRoomData(body, { partial = false } = {}) {
+  const room = {}
+
+  for (const field of editableRoomFields) {
+    if (!partial || body[field] !== undefined) {
+      room[field] = normalizeRoomField(field, body[field])
+    }
+  }
+
+  return room
+}
+
+function normalizeRoomField(field, value) {
+  if (field === 'capacity') {
+    return Number(value || 1)
+  }
+
+  if (field === 'price') {
+    return value ? Number(value) : ''
+  }
+
+  if (field === 'galleryImages') {
+    return normalizeList(value)
+  }
+
+  if (field === 'details') {
+    return normalizeList(value)
+  }
+
+  if (field === 'isAvailable') {
+    return value !== false
+  }
+
+  if (field === 'priceUnit') {
+    return value || 'per night'
+  }
+
+  return value || ''
+}
+
+function normalizeList(value) {
+  return Array.isArray(value)
+    ? value
+    : String(value || '')
+        .split('\n')
+        .map((item) => item.trim())
+        .filter(Boolean)
 }

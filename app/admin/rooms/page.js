@@ -21,6 +21,8 @@ const emptyRoom = {
   isAvailable: true,
 }
 
+const editableRoomFields = Object.keys(emptyRoom)
+
 export default function Rooms() {
   const [rooms, setRooms] = useState([])
   const [newRoom, setNewRoom] = useState(emptyRoom)
@@ -571,8 +573,14 @@ function GalleryUploadField({ value, uploading, onUpload, onClear }) {
 }
 
 function normalizeRoomForm(room) {
+  const roomData = {}
+
+  for (const field of editableRoomFields) {
+    roomData[field] = room[field]
+  }
+
   return {
-    ...room,
+    ...roomData,
     capacity: Number(room.capacity),
     price: room.price ? Number(room.price) : '',
     galleryImages: String(room.galleryImages || '')

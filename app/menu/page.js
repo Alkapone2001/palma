@@ -224,8 +224,14 @@ const uiText = {
     heroTitle: 'Food, drinks, and Palma signatures.',
     heroText: 'Browse the full Palma 5 menu with prices, from pizza and pasta to seafood, grill plates, salads, sides, coffee, beer, wine, and spirits.',
     search: 'Search menu...',
+    chooseCategory: 'Choose a category',
+    chooseCategoryText: 'Start with a section, then browse only the dishes and drinks inside it.',
+    backToCategories: 'All categories',
+    viewCategory: 'View category',
+    searchResults: 'Search results',
     noItems: 'No menu items found.',
     itemLabel: 'items',
+    categoryLabel: 'categories',
     ready: 'Ready to join us?',
     readyText: 'Book a restaurant table or request a hotel room.',
     book: 'Book now',
@@ -234,8 +240,14 @@ const uiText = {
     heroTitle: 'Hrana, pice i Palma specijaliteti.',
     heroText: 'Pregledajte cijeli Palma 5 meni s cijenama, od pizza i tjestenine do ribe, grilla, salata, priloga, kave, piva, vina i zestokih pica.',
     search: 'Pretrazi jelovnik...',
+    chooseCategory: 'Odaberite kategoriju',
+    chooseCategoryText: 'Krenite od kategorije, zatim pregledajte samo jela i pica unutar nje.',
+    backToCategories: 'Sve kategorije',
+    viewCategory: 'Otvori kategoriju',
+    searchResults: 'Rezultati pretrage',
     noItems: 'Nema pronadenih stavki.',
     itemLabel: 'stavki',
+    categoryLabel: 'kategorija',
     ready: 'Spremni ste nas posjetiti?',
     readyText: 'Rezervirajte stol u restoranu ili posaljite upit za hotelsku sobu.',
     book: 'Rezerviraj',
@@ -244,8 +256,14 @@ const uiText = {
     heroTitle: 'Essen, Getraenke und Palma Spezialitaeten.',
     heroText: 'Entdecken Sie die komplette Palma 5 Speisekarte mit Preisen, von Pizza und Pasta bis zu Fisch, Grillplatten, Salaten, Beilagen, Kaffee, Bier, Wein und Spirituosen.',
     search: 'Speisekarte suchen...',
+    chooseCategory: 'Kategorie auswaehlen',
+    chooseCategoryText: 'Waehlen Sie zuerst eine Kategorie und sehen Sie danach nur die passenden Gerichte und Getraenke.',
+    backToCategories: 'Alle Kategorien',
+    viewCategory: 'Kategorie ansehen',
+    searchResults: 'Suchergebnisse',
     noItems: 'Keine Menuepunkte gefunden.',
     itemLabel: 'Gerichte',
+    categoryLabel: 'Kategorien',
     ready: 'Bereit fuer Ihren Besuch?',
     readyText: 'Reservieren Sie einen Tisch oder fragen Sie ein Hotelzimmer an.',
     book: 'Jetzt buchen',
@@ -337,13 +355,18 @@ const sections = categoryOrder
 export default function Menu() {
   const [language, setLanguage] = useState('en')
   const [query, setQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('')
   const text = uiText[language]
 
   const filteredSections = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
-    if (!normalizedQuery) return sections
+    const activeSections = selectedCategory && !normalizedQuery
+      ? sections.filter((section) => section.id === selectedCategory)
+      : sections
 
-    return sections
+    if (!normalizedQuery) return activeSections
+
+    return activeSections
       .map((section) => ({
         ...section,
         items: section.items.filter((menuItem) => {
@@ -363,7 +386,20 @@ export default function Menu() {
         }),
       }))
       .filter((section) => section.items.length > 0)
-  }, [query])
+  }, [query, selectedCategory])
+
+  const selectedSection = sections.find((section) => section.id === selectedCategory)
+  const isSearching = query.trim().length > 0
+
+  function selectCategory(sectionId) {
+    setSelectedCategory(sectionId)
+    setQuery('')
+  }
+
+  function showCategories() {
+    setSelectedCategory('')
+    setQuery('')
+  }
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -387,7 +423,10 @@ export default function Menu() {
               <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" />
               <input
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={(event) => {
+                  setQuery(event.target.value)
+                  if (event.target.value) setSelectedCategory('')
+                }}
                 className="w-full rounded-full border border-stone-200 bg-stone-50 py-3 pl-11 pr-4 text-sm outline-none transition focus:border-emerald-800 focus:bg-white focus:ring-4 focus:ring-emerald-900/10"
                 placeholder={text.search}
               />
@@ -406,24 +445,71 @@ export default function Menu() {
             </div>
           </div>
 
-          <nav className="mt-6 flex gap-2 overflow-x-auto pb-2">
-            {sections.map((section) => (
-              <a key={section.id} href={`#${section.id}`} className="whitespace-nowrap rounded-full border border-stone-200 bg-white px-4 py-2 text-sm font-semibold text-stone-700 transition hover:border-emerald-200 hover:text-emerald-900">
-                {section.title[language]}
-              </a>
-            ))}
-          </nav>
+          {!selectedCategory && !isSearching && (
+            <section className="mt-10">
+              <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-800">{text.chooseCategory}</p>
+                  <h2 className="mt-3 text-3xl font-semibold text-stone-950">{text.chooseCategory}</h2>
+                  <p className="mt-3 max-w-2xl leading-7 text-stone-600">{text.chooseCategoryText}</p>
+                </div>
+                <p className="rounded-full bg-white px-4 py-2 text-sm font-semibold text-stone-600 shadow-sm shadow-stone-200/80">
+                  {sections.length} {text.categoryLabel}
+                </p>
+              </div>
+              <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {sections.map((section) => (
+                  <CategoryTile key={section.id} section={section} language={language} onSelect={selectCategory} />
+                ))}
+              </div>
+            </section>
+          )}
 
-          <div className="mt-10 space-y-10">
-            {filteredSections.map((section) => (
-              <MenuSection key={section.id} section={section} language={language} />
-            ))}
-          </div>
+          {(selectedCategory || isSearching) && (
+            <>
+              <div className="mt-8 flex flex-col gap-4 rounded-[1.5rem] border border-stone-200 bg-white p-5 shadow-xl shadow-stone-200/60 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-800">
+                    {isSearching ? text.searchResults : text.chooseCategory}
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-stone-950">
+                    {isSearching ? query : selectedSection?.title[language]}
+                  </h2>
+                </div>
+                <button
+                  type="button"
+                  onClick={showCategories}
+                  className="inline-flex items-center justify-center rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-stone-700 transition hover:bg-stone-50"
+                >
+                  {text.backToCategories}
+                </button>
+              </div>
 
-          {filteredSections.length === 0 && (
-            <div className="mt-10 rounded-[2rem] border border-stone-200 bg-white p-8 text-stone-600">
-              {text.noItems}
-            </div>
+              <nav className="mt-6 flex gap-2 overflow-x-auto pb-2">
+                {sections.map((section) => (
+                  <button
+                    key={section.id}
+                    type="button"
+                    onClick={() => selectCategory(section.id)}
+                    className={`whitespace-nowrap rounded-full border px-4 py-2 text-sm font-semibold transition ${selectedCategory === section.id ? 'border-emerald-900 bg-emerald-900 text-white' : 'border-stone-200 bg-white text-stone-700 hover:border-emerald-200 hover:text-emerald-900'}`}
+                  >
+                    {section.title[language]}
+                  </button>
+                ))}
+              </nav>
+
+              <div className="mt-8 space-y-10">
+                {filteredSections.map((section) => (
+                  <MenuSection key={section.id} section={section} language={language} />
+                ))}
+              </div>
+
+              {filteredSections.length === 0 && (
+                <div className="mt-10 rounded-[2rem] border border-stone-200 bg-white p-8 text-stone-600">
+                  {text.noItems}
+                </div>
+              )}
+            </>
           )}
 
           <div className="mt-12 flex flex-col items-start justify-between gap-5 rounded-[2rem] bg-emerald-950 p-8 text-white sm:flex-row sm:items-center">
@@ -478,6 +564,36 @@ function MenuSection({ section, language }) {
         ))}
       </div>
     </section>
+  )
+}
+
+function CategoryTile({ section, language, onSelect }) {
+  const Icon = sectionIcons[section.id] || Utensils
+  const text = uiText[language]
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(section.id)}
+      className="group flex min-h-[180px] flex-col justify-between rounded-[1.5rem] border border-stone-200 bg-white p-6 text-left shadow-xl shadow-stone-200/60 transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-2xl"
+    >
+      <span className="flex items-start justify-between gap-4">
+        <span className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-900 transition group-hover:bg-emerald-900 group-hover:text-white">
+          <Icon className="h-5 w-5" />
+        </span>
+        <span className="rounded-full bg-stone-50 px-3 py-1 text-sm font-semibold text-stone-600">
+          {section.items.length} {text.itemLabel}
+        </span>
+      </span>
+      <span>
+        <span className="block text-2xl font-semibold text-stone-950">{section.title[language]}</span>
+        <span className="mt-2 block text-sm leading-6 text-stone-600">{section.tagline[language]}</span>
+        <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-emerald-900">
+          {text.viewCategory}
+          <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+        </span>
+      </span>
+    </button>
   )
 }
 
