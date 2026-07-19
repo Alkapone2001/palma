@@ -1,5 +1,5 @@
 import { ObjectId } from 'mongodb'
-import { isAdminRequest, unauthorized } from '../../lib/adminAuth'
+import { isAdminRequest, isRoomCalendarRequest, unauthorized } from '../../lib/adminAuth'
 import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
 import { sendReservationCreatedEmail, sendReservationReceivedEmail, sendReservationStatusEmail } from '../../lib/email'
 
@@ -11,17 +11,18 @@ const LAST_TABLE_SEATING = '22:00'
 const TABLE_SLOT_MINUTES = 120
 
 export async function GET(request) {
-  if (!isAdminRequest(request)) {
+  if (!isRoomCalendarRequest(request)) {
     return unauthorized()
   }
 
   const client = createMongoClient()
+  const isAdmin = isAdminRequest(request)
 
   try {
     await client.connect()
     const database = getRestaurantDb(client)
     const reservations = database.collection('reservations')
-    const result = await reservations.find({}).sort({ createdAt: -1 }).toArray()
+    const result = await reservations.find(isAdmin ? {} : { type: 'room' }).sort({ createdAt: -1 }).toArray()
     return Response.json(result)
   } catch (error) {
     console.error(error)
@@ -36,7 +37,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json()
-    const isAdmin = isAdminRequest(request)
+    const canManageRoomCalendar = isRoomCalendarRequest(request)
     const validationError = validateBooking(body)
 
     if (validationError) {
@@ -45,7 +46,7 @@ export async function POST(request) {
 
     const booking = {
       ...body,
-      status: isAdmin ? body.status || 'pending' : 'pending',
+      status: canManageRoomCalendar ? body.status || 'pending' : 'pending',
       createdAt: body.createdAt || new Date().toISOString(),
     }
 
@@ -80,7 +81,7 @@ export async function POST(request) {
 }
 
 export async function PUT(request) {
-  if (!isAdminRequest(request)) {
+  if (!isRoomCalendarRequest(request)) {
     return unauthorized()
   }
 
@@ -88,10 +89,29 @@ export async function PUT(request) {
 
   try {
     const body = await request.json()
+    const isAdmin = isAdminRequest(request)
     const { id, ...updateData } = body
+    const agencyRoomUpdate = pickFields(updateData, [
+      'roomId',
+      'roomName',
+      'checkIn',
+      'checkOut',
+      'adults',
+      'children',
+      'guests',
+      'nights',
+      'estimatedTotal',
+      'name',
+      'email',
+      'phone',
+      'notes',
+      'adminNotes',
+      'status',
+    ])
+    const allowedUpdateData = isAdmin ? updateData : agencyRoomUpdate
     const normalizedUpdateData = {
-      ...updateData,
-      ...(updateData.tableId !== undefined ? { tableId: String(updateData.tableId || '') } : {}),
+      ...allowedUpdateData,
+      ...(allowedUpdateData.tableId !== undefined ? { tableId: String(allowedUpdateData.tableId || '') } : {}),
     }
 
     await client.connect()
@@ -103,9 +123,19 @@ export async function PUT(request) {
       return Response.json({ error: 'Booking not found' }, { status: 404 })
     }
 
+    if (!isAdmin && existingReservation.type !== 'room') {
+      return unauthorized()
+    }
+
     const nextReservation = {
       ...existingReservation,
       ...normalizedUpdateData,
+    }
+
+    const validationError = validateBooking(nextReservation)
+
+    if (validationError) {
+      return Response.json({ error: validationError }, { status: 400 })
     }
 
     if (nextReservation.status === 'approved') {
@@ -120,7 +150,6 @@ export async function PUT(request) {
       { _id: new ObjectId(id) },
       {
         $set: {
-          ...updateData,
           ...normalizedUpdateData,
           updatedAt: new Date().toISOString(),
         },
@@ -330,4 +359,14 @@ function isValidStayRange(checkIn, checkOut) {
   const start = new Date(`${checkIn}T00:00:00`)
   const end = new Date(`${checkOut}T00:00:00`)
   return Number.isFinite(start.getTime()) && Number.isFinite(end.getTime()) && end > start
+}
+
+function pickFields(source, fields) {
+  return fields.reduce((picked, field) => {
+    if (source[field] !== undefined) {
+      picked[field] = source[field]
+    }
+
+    return picked
+  }, {})
 }

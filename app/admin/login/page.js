@@ -28,11 +28,12 @@ function LoginForm() {
     const response = await fetch('/api/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password, nextPath }),
     })
 
     if (response.ok) {
-      window.location.href = nextPath
+      const data = await response.json().catch(() => ({}))
+      window.location.href = data.nextPath || nextPath
       return
     }
 
@@ -89,7 +90,7 @@ function LoginHeader() {
       <p className="mt-6 text-sm font-semibold uppercase tracking-[0.22em] text-emerald-800">Palma 5 admin</p>
       <h1 className="mt-3 text-3xl font-bold">Sign in</h1>
       <p className="mt-3 text-sm leading-6 text-[#69594d]">
-        Reservations, room prices, table capacity, and approvals are protected behind this login.
+        Admins can manage the full dashboard. Agency partners can use the shared room calendar only.
       </p>
     </>
   )

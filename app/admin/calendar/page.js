@@ -28,6 +28,7 @@ export default function AdminCalendar() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
+  const [canViewTables, setCanViewTables] = useState(true)
   const [bookingForm, setBookingForm] = useState(emptyStaffBooking)
 
   useEffect(() => {
@@ -43,15 +44,16 @@ export default function AdminCalendar() {
         fetch('/api/rooms'),
         fetch('/api/tables'),
       ])
-      const [reservationData, roomData, tableData] = await Promise.all([
+      const [reservationData, roomData] = await Promise.all([
         reservationResponse.json(),
         roomResponse.json(),
-        tableResponse.json(),
       ])
+      const tableData = tableResponse.ok ? await tableResponse.json() : []
 
       setReservations(Array.isArray(reservationData) ? reservationData : [])
       setRooms(Array.isArray(roomData) ? roomData : [])
       setTables(Array.isArray(tableData) ? tableData : [])
+      setCanViewTables(tableResponse.ok)
     } catch (error) {
       setMessage('Calendar could not be loaded.')
     } finally {
@@ -200,7 +202,7 @@ export default function AdminCalendar() {
             Admin Dashboard
           </Link>
           <div className="flex items-center gap-3">
-            <Link href="/admin/reservations" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Requests</Link>
+            {canViewTables && <Link href="/admin/reservations" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Requests</Link>}
             <button type="button" onClick={loadCalendar} className="inline-flex items-center gap-2 rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 hover:bg-stone-50">
               <RefreshCw className="h-4 w-4" />
               Refresh
@@ -235,7 +237,7 @@ export default function AdminCalendar() {
           <Metric icon={DoorOpen} label="Rooms" value={rooms.length} />
           <Metric icon={CalendarDays} label="Pending room requests" value={pendingRoomReservations.length} />
           <Metric icon={CheckCircle2} label="28-day occupancy" value={`${occupancyRate}%`} />
-          <Metric icon={UsersRound} label="Tables today" value={selectedTableReservations.length} />
+          <Metric icon={UsersRound} label={canViewTables ? 'Tables today' : 'Free rooms tonight'} value={canViewTables ? selectedTableReservations.length : availableRoomsForSelectedDate.length} />
         </section>
 
         {loading ? (
@@ -324,9 +326,11 @@ export default function AdminCalendar() {
 
               <DayPanel
                 selectedDate={selectedDate}
+                rooms={rooms}
                 roomReservations={selectedDayRoomReservations}
                 tableReservations={selectedTableReservations}
                 availableRooms={availableRoomsForSelectedDate}
+                canViewTables={canViewTables}
                 saving={saving}
                 onUpdate={updateReservation}
                 onBookRoom={startBookingForRoom}
@@ -486,7 +490,7 @@ function StaffBookingForm({ rooms, form, selectedRoom, nights, guests, conflict,
   )
 }
 
-function DayPanel({ selectedDate, roomReservations, tableReservations, availableRooms, saving, onUpdate, onBookRoom }) {
+function DayPanel({ selectedDate, rooms, roomReservations, tableReservations, availableRooms, canViewTables, saving, onUpdate, onBookRoom }) {
   return (
     <section className="rounded-[1.5rem] border border-stone-200 bg-white p-5 shadow-xl shadow-stone-200/60">
       <h2 className="text-2xl font-semibold">{formatLongDate(selectedDate)}</h2>
@@ -502,6 +506,7 @@ function DayPanel({ selectedDate, roomReservations, tableReservations, available
                   key={reservation._id}
                   reservation={reservation}
                   selectedDate={selectedDate}
+                  rooms={rooms}
                   saving={saving}
                   onUpdate={onUpdate}
                 />
@@ -529,33 +534,66 @@ function DayPanel({ selectedDate, roomReservations, tableReservations, available
             )}
           </div>
         </div>
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Restaurant</p>
-          <div className="mt-3 space-y-3">
-            {tableReservations.length === 0 ? (
-              <p className="rounded-2xl bg-stone-50 p-4 text-sm text-stone-600">No table reservations for this date.</p>
-            ) : (
-              tableReservations.map((reservation) => (
-                <div key={reservation._id} className="rounded-2xl bg-stone-50 p-4 text-sm">
-                  <p className="font-semibold text-stone-950">{reservation.time} - {reservation.name}</p>
-                  <p className="mt-1 text-stone-500">{reservation.guests} guests / {reservation.tableName || 'No table assigned'} / {reservation.status || 'pending'}</p>
-                </div>
-              ))
-            )}
+        {canViewTables && (
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Restaurant</p>
+            <div className="mt-3 space-y-3">
+              {tableReservations.length === 0 ? (
+                <p className="rounded-2xl bg-stone-50 p-4 text-sm text-stone-600">No table reservations for this date.</p>
+              ) : (
+                tableReservations.map((reservation) => (
+                  <div key={reservation._id} className="rounded-2xl bg-stone-50 p-4 text-sm">
+                    <p className="font-semibold text-stone-950">{reservation.time} - {reservation.name}</p>
+                    <p className="mt-1 text-stone-500">{reservation.guests} guests / {reservation.tableName || 'No table assigned'} / {reservation.status || 'pending'}</p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   )
 }
 
-function ReservationLine({ reservation, selectedDate, saving, onUpdate }) {
+function ReservationLine({ reservation, selectedDate, rooms, saving, onUpdate }) {
   const status = reservation.status || 'pending'
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(() => reservationToDraft(reservation))
   const movement = reservation.checkIn === selectedDate
     ? 'Check-in'
     : reservation.checkOut === selectedDate
       ? 'Check-out'
       : 'In house'
+  const selectedRoom = rooms.find((room) => String(room._id) === String(draft.roomId))
+  const draftNights = calculateNights(draft.checkIn, draft.checkOut)
+  const draftGuests = Number(draft.adults || 0) + Number(draft.children || 0)
+
+  function updateDraft(event) {
+    const { name, value } = event.target
+    setDraft((current) => ({ ...current, [name]: value }))
+  }
+
+  function saveDraft() {
+    const room = rooms.find((item) => String(item._id) === String(draft.roomId))
+
+    onUpdate(reservation, {
+      ...draft,
+      roomId: String(draft.roomId),
+      roomName: room?.name || draft.roomName,
+      adults: Number(draft.adults || 0),
+      children: Number(draft.children || 0),
+      guests: draftGuests,
+      nights: draftNights,
+      estimatedTotal: room?.price && draftNights > 0 ? Number(room.price) * draftNights : reservation.estimatedTotal || null,
+    }, 'Room booking details saved.')
+    setEditing(false)
+  }
+
+  function cancelEdit() {
+    setDraft(reservationToDraft(reservation))
+    setEditing(false)
+  }
 
   return (
     <div className="rounded-2xl bg-stone-50 p-4 text-sm">
@@ -572,6 +610,65 @@ function ReservationLine({ reservation, selectedDate, saving, onUpdate }) {
         </span>
       </div>
       {reservation.notes && <p className="mt-3 rounded-xl bg-white p-3 text-xs leading-5 text-stone-600">{reservation.notes}</p>}
+      {editing && (
+        <div className="mt-4 rounded-2xl bg-white p-4">
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Room
+              <select name="roomId" value={draft.roomId} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900">
+                {rooms.map((room) => (
+                  <option key={room._id} value={room._id}>{room.name}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Status
+              <select name="status" value={draft.status} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900">
+                {['pending', 'approved', 'declined', 'cancelled', 'completed', 'no-show'].map((item) => <option key={item} value={item}>{item}</option>)}
+              </select>
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Check-in
+              <input type="date" name="checkIn" value={draft.checkIn} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900" />
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Check-out
+              <input type="date" name="checkOut" value={draft.checkOut} min={draft.checkIn || undefined} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900" />
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Guest
+              <input name="name" value={draft.name} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900" />
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Phone
+              <input name="phone" value={draft.phone} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900" />
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Email
+              <input type="email" name="email" value={draft.email} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900" />
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Adults
+              <input type="number" name="adults" value={draft.adults} min="1" onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900" />
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Children
+              <input type="number" name="children" value={draft.children} min="0" onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900" />
+            </label>
+          </div>
+          <label className="mt-3 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+            Notes
+            <textarea name="notes" value={draft.notes} onChange={updateDraft} rows="3" className="mt-1 block w-full resize-none rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900" />
+          </label>
+          <div className="mt-3 rounded-xl bg-stone-50 p-3 text-xs text-stone-600">
+            {draftNights > 0 ? `${draftNights} night${draftNights === 1 ? '' : 's'}` : 'Choose valid dates'} / {draftGuests} guests / {selectedRoom?.price && draftNights > 0 ? `EUR ${(Number(selectedRoom.price) * draftNights).toLocaleString()}` : 'No price estimate'}
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <button type="button" onClick={saveDraft} disabled={saving || draftNights <= 0 || draftGuests <= 0} className="rounded-full bg-emerald-900 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">Save changes</button>
+            <button type="button" onClick={cancelEdit} className="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 hover:bg-stone-50">Cancel edit</button>
+          </div>
+        </div>
+      )}
       <div className="mt-4 flex flex-wrap gap-2">
         <button
           type="button"
@@ -602,6 +699,13 @@ function ReservationLine({ reservation, selectedDate, saving, onUpdate }) {
             {nextStatus}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => setEditing((current) => !current)}
+          className="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-white"
+        >
+          {editing ? 'Hide edit' : 'Edit booking'}
+        </button>
       </div>
     </div>
   )
@@ -656,9 +760,25 @@ function getOccupancyClass(status, isWeekend) {
 
 function getStatusPillClass(status) {
   if (status === 'approved') return 'bg-emerald-100 text-emerald-950'
-  if (status === 'declined' || status === 'cancelled') return 'bg-red-100 text-red-800'
+  if (status === 'declined' || status === 'cancelled' || status === 'no-show') return 'bg-red-100 text-red-800'
   if (status === 'completed') return 'bg-stone-200 text-stone-800'
   return 'bg-amber-100 text-amber-900'
+}
+
+function reservationToDraft(reservation) {
+  return {
+    roomId: String(reservation.roomId || ''),
+    roomName: reservation.roomName || '',
+    checkIn: reservation.checkIn || '',
+    checkOut: reservation.checkOut || '',
+    name: reservation.name || '',
+    email: reservation.email || '',
+    phone: reservation.phone || '',
+    adults: reservation.adults || reservation.guests || 1,
+    children: reservation.children || 0,
+    notes: reservation.notes || '',
+    status: reservation.status || 'pending',
+  }
 }
 
 function getRoomLabel(reservation, rooms) {

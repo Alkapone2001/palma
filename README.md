@@ -33,6 +33,8 @@ NEXTAUTH_SECRET=
 NEXTAUTH_URL=
 PALMA_ADMIN_PASSWORD=
 PALMA_ADMIN_SESSION_TOKEN=
+PALMA_AGENCY_PASSWORD=
+PALMA_AGENCY_SESSION_TOKEN=
 ```
 
 Recommended production variables:
@@ -54,4 +56,4 @@ Vercel does not run `docker-compose.yml`; it builds the Next.js app directly fro
 
 Room image uploads use Vercel Blob when `BLOB_READ_WRITE_TOKEN` is configured. Without that variable, uploads fall back to `public/uploads/rooms`, which is only suitable for local development.
 
-Use a strong, unique `PALMA_ADMIN_PASSWORD` and `PALMA_ADMIN_SESSION_TOKEN` in production. Do not reuse the local Docker values.
+Use strong, unique `PALMA_ADMIN_PASSWORD`, `PALMA_ADMIN_SESSION_TOKEN`, `PALMA_AGENCY_PASSWORD`, and `PALMA_AGENCY_SESSION_TOKEN` values in production. The agency login can only access the shared room calendar.
