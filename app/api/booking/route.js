@@ -62,7 +62,11 @@ export async function POST(request) {
     sendReservationCreatedEmail(booking).catch((emailError) => {
       console.error('Failed to send admin reservation email:', emailError)
     })
-    sendReservationReceivedEmail(booking).catch((emailError) => {
+    const guestEmail = booking.status === 'approved'
+      ? sendReservationStatusEmail(booking, 'approved')
+      : sendReservationReceivedEmail(booking)
+
+    guestEmail.catch((emailError) => {
       console.error('Failed to send guest reservation email:', emailError)
     })
 

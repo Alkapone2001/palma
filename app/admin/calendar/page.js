@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, DoorOpen, Mail, Phone, Plus, RefreshCw, UserRound, UsersRound } from 'lucide-react'
+import { ArrowLeft, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, DoorOpen, Mail, Phone, Plus, RefreshCw, UserRound, UsersRound, XCircle } from 'lucide-react'
 
 const activeStatuses = ['pending', 'approved']
 const blockedStatuses = ['approved']
@@ -83,6 +83,10 @@ export default function AdminCalendar() {
       .sort((first, second) => String(first.time || '').localeCompare(String(second.time || ''))),
     [reservations, selectedDate],
   )
+  const availableRoomsForSelectedDate = useMemo(
+    () => rooms.filter((room) => !getRoomStayForDate(room, selectedDate, approvedRoomReservations)),
+    [rooms, approvedRoomReservations, selectedDate],
+  )
   const monthDays = useMemo(() => buildMonthDays(visibleMonth), [visibleMonth])
   const occupancyDays = useMemo(() => buildOccupancyDays(selectedDate, 28), [selectedDate])
   const selectedRoom = rooms.find((room) => String(room._id) === String(bookingForm.roomId))
@@ -101,6 +105,15 @@ export default function AdminCalendar() {
   function handleBookingChange(event) {
     const { name, value } = event.target
     setBookingForm((current) => ({ ...current, [name]: value }))
+  }
+
+  function startBookingForRoom(room, date) {
+    setBookingForm((current) => ({
+      ...current,
+      roomId: String(room._id),
+      checkIn: date,
+      checkOut: nextDateKey(date),
+    }))
   }
 
   async function createStaffBooking(event) {
@@ -148,6 +161,31 @@ export default function AdminCalendar() {
       setMessage('Room booking added and blocked on the calendar.')
     } catch (error) {
       setMessage(error.message || 'Room booking could not be created.')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function updateReservation(reservation, updateData, successMessage = 'Reservation updated.') {
+    setMessage('')
+    setSaving(true)
+
+    try {
+      const response = await fetch('/api/booking', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: reservation._id, ...updateData }),
+      })
+      const data = await response.json().catch(() => ({}))
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Reservation could not be updated.')
+      }
+
+      await loadCalendar()
+      setMessage(successMessage)
+    } catch (error) {
+      setMessage(error.message || 'Reservation could not be updated.')
     } finally {
       setSaving(false)
     }
@@ -209,7 +247,7 @@ export default function AdminCalendar() {
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                   <div>
                     <h2 className="text-2xl font-semibold">Month view</h2>
-                    <p className="mt-1 text-sm text-stone-500">Each square is one calendar day. Dark means at least one approved room stay.</p>
+                    <p className="mt-1 text-sm text-stone-500">Each square shows pending and confirmed room stays for that day.</p>
                   </div>
                   <div className="flex items-center gap-2">
                     <button type="button" onClick={() => moveMonth(-1)} className="flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 hover:bg-stone-50" aria-label="Previous month">
@@ -231,7 +269,7 @@ export default function AdminCalendar() {
                       day={day}
                       selected={selectedDate === day.key}
                       rooms={rooms}
-                      reservations={approvedRoomReservations}
+                      reservations={roomReservations}
                       onSelect={() => setSelectedDate(day.key)}
                     />
                   ))}
@@ -288,6 +326,10 @@ export default function AdminCalendar() {
                 selectedDate={selectedDate}
                 roomReservations={selectedDayRoomReservations}
                 tableReservations={selectedTableReservations}
+                availableRooms={availableRoomsForSelectedDate}
+                saving={saving}
+                onUpdate={updateReservation}
+                onBookRoom={startBookingForRoom}
               />
             </aside>
           </div>
@@ -298,21 +340,43 @@ export default function AdminCalendar() {
 }
 
 function MonthDayButton({ day, selected, rooms, reservations, onSelect }) {
-  const occupiedRooms = day.inMonth
-    ? rooms.filter((room) => getRoomStayForDate(room, day.key, reservations)).length
-    : 0
-  const isFull = rooms.length > 0 && occupiedRooms >= rooms.length
+  const stays = day.inMonth ? getRoomStaysForDate(day.key, reservations) : []
+  const approvedCount = stays.filter((stay) => (stay.status || 'pending') === 'approved').length
+  const pendingCount = stays.filter((stay) => (stay.status || 'pending') === 'pending').length
+  const occupiedRoomIds = new Set(stays.filter((stay) => (stay.status || 'pending') === 'approved').map((stay) => String(stay.roomId)))
+  const isFull = rooms.length > 0 && occupiedRoomIds.size >= rooms.length
 
   return (
     <button
       type="button"
       onClick={onSelect}
-      className={`aspect-square rounded-xl border p-2 text-left transition ${selected ? 'border-emerald-900 ring-4 ring-emerald-900/10' : 'border-stone-100 hover:border-emerald-200'} ${day.inMonth ? 'bg-white' : 'bg-stone-50 text-stone-300'} ${occupiedRooms ? 'shadow-sm' : ''}`}
+      className={`flex min-h-28 flex-col rounded-xl border p-2 text-left transition ${selected ? 'border-emerald-900 ring-4 ring-emerald-900/10' : 'border-stone-100 hover:border-emerald-200'} ${day.inMonth ? 'bg-white' : 'bg-stone-50 text-stone-300'} ${stays.length ? 'shadow-sm' : ''}`}
     >
-      <span className="text-sm font-semibold">{day.date.getDate()}</span>
+      <span className="flex items-center justify-between gap-2">
+        <span className="text-sm font-semibold">{day.date.getDate()}</span>
+        {day.inMonth && stays.length > 0 && (
+          <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${isFull ? 'bg-red-100 text-red-800' : 'bg-stone-100 text-stone-600'}`}>
+            {approvedCount}/{rooms.length}
+          </span>
+        )}
+      </span>
       {day.inMonth && (
-        <span className={`mt-3 block rounded-lg px-2 py-1 text-center text-xs font-semibold ${isFull ? 'bg-red-100 text-red-800' : occupiedRooms ? 'bg-emerald-900 text-white' : 'bg-stone-100 text-stone-500'}`}>
-          {occupiedRooms ? `${occupiedRooms}/${rooms.length}` : 'Free'}
+        <span className="mt-2 flex flex-1 flex-col gap-1 overflow-hidden">
+          {stays.length === 0 ? (
+            <span className="rounded-lg bg-stone-100 px-2 py-1 text-center text-xs font-semibold text-stone-500">Free</span>
+          ) : (
+            stays.slice(0, 3).map((stay) => (
+              <span key={stay._id} className={`truncate rounded-md px-2 py-1 text-[10px] font-semibold ${getStatusPillClass(stay.status || 'pending')}`}>
+                {getRoomLabel(stay, rooms)} {stay.status === 'approved' ? 'confirmed' : 'pending'}
+              </span>
+            ))
+          )}
+          {stays.length > 3 && (
+            <span className="text-center text-[10px] font-semibold text-stone-500">+{stays.length - 3} more</span>
+          )}
+          {pendingCount > 0 && (
+            <span className="mt-auto text-center text-[10px] font-semibold text-amber-700">{pendingCount} needs action</span>
+          )}
         </span>
       )}
     </button>
@@ -422,7 +486,7 @@ function StaffBookingForm({ rooms, form, selectedRoom, nights, guests, conflict,
   )
 }
 
-function DayPanel({ selectedDate, roomReservations, tableReservations }) {
+function DayPanel({ selectedDate, roomReservations, tableReservations, availableRooms, saving, onUpdate, onBookRoom }) {
   return (
     <section className="rounded-[1.5rem] border border-stone-200 bg-white p-5 shadow-xl shadow-stone-200/60">
       <h2 className="text-2xl font-semibold">{formatLongDate(selectedDate)}</h2>
@@ -433,7 +497,35 @@ function DayPanel({ selectedDate, roomReservations, tableReservations }) {
             {roomReservations.length === 0 ? (
               <p className="rounded-2xl bg-stone-50 p-4 text-sm text-stone-600">No room arrivals, departures, or stays.</p>
             ) : (
-              roomReservations.map((reservation) => <ReservationLine key={reservation._id} reservation={reservation} />)
+              roomReservations.map((reservation) => (
+                <ReservationLine
+                  key={reservation._id}
+                  reservation={reservation}
+                  selectedDate={selectedDate}
+                  saving={saving}
+                  onUpdate={onUpdate}
+                />
+              ))
+            )}
+          </div>
+        </div>
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-stone-500">Available tonight</p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {availableRooms.length === 0 ? (
+              <p className="rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-800 sm:col-span-2">No confirmed free rooms for this night.</p>
+            ) : (
+              availableRooms.map((room) => (
+                <button
+                  key={room._id}
+                  type="button"
+                  onClick={() => onBookRoom(room, selectedDate)}
+                  className="rounded-2xl border border-stone-100 bg-white p-3 text-left text-sm transition hover:border-emerald-200 hover:bg-emerald-50"
+                >
+                  <span className="block font-semibold text-stone-950">{room.name}</span>
+                  <span className="mt-1 block text-xs text-stone-500">Up to {room.capacity || 1} guests</span>
+                </button>
+              ))
             )}
           </div>
         </div>
@@ -457,17 +549,59 @@ function DayPanel({ selectedDate, roomReservations, tableReservations }) {
   )
 }
 
-function ReservationLine({ reservation }) {
+function ReservationLine({ reservation, selectedDate, saving, onUpdate }) {
+  const status = reservation.status || 'pending'
+  const movement = reservation.checkIn === selectedDate
+    ? 'Check-in'
+    : reservation.checkOut === selectedDate
+      ? 'Check-out'
+      : 'In house'
+
   return (
     <div className="rounded-2xl bg-stone-50 p-4 text-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
           <p className="font-semibold text-stone-950">{reservation.roomName || 'Room'} - {reservation.name}</p>
-          <p className="mt-1 text-stone-500">{reservation.checkIn} to {reservation.checkOut}</p>
+          <p className="mt-1 text-stone-500">{movement} / {reservation.checkIn} to {reservation.checkOut} / {reservation.guests || 1} guests</p>
+          {(reservation.email || reservation.phone) && (
+            <p className="mt-1 text-xs text-stone-500">{reservation.email || 'No email'} / {reservation.phone || 'No phone'}</p>
+          )}
         </div>
-        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${reservation.status === 'approved' ? 'bg-emerald-100 text-emerald-950' : 'bg-amber-100 text-amber-900'}`}>
-          {reservation.status || 'pending'}
+        <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${getStatusPillClass(status)}`}>
+          {status}
         </span>
+      </div>
+      {reservation.notes && <p className="mt-3 rounded-xl bg-white p-3 text-xs leading-5 text-stone-600">{reservation.notes}</p>}
+      <div className="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={() => onUpdate(reservation, { status: 'approved' }, 'Room request approved.')}
+          disabled={saving || status === 'approved'}
+          className="inline-flex items-center gap-1.5 rounded-full bg-emerald-900 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <CheckCircle2 className="h-3.5 w-3.5" />
+          Approve
+        </button>
+        <button
+          type="button"
+          onClick={() => onUpdate(reservation, { status: 'declined' }, 'Room request declined.')}
+          disabled={saving || status === 'declined'}
+          className="inline-flex items-center gap-1.5 rounded-full border border-red-100 px-3 py-2 text-xs font-semibold text-red-700 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          <XCircle className="h-3.5 w-3.5" />
+          Decline
+        </button>
+        {['cancelled', 'completed'].map((nextStatus) => (
+          <button
+            key={nextStatus}
+            type="button"
+            onClick={() => onUpdate(reservation, { status: nextStatus }, `Room booking marked ${nextStatus}.`)}
+            disabled={saving || status === nextStatus}
+            className="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold capitalize text-stone-700 transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {nextStatus}
+          </button>
+        ))}
       </div>
     </div>
   )
@@ -520,13 +654,41 @@ function getOccupancyClass(status, isWeekend) {
   return isWeekend ? 'border-stone-100 bg-stone-100' : 'border-stone-100 bg-stone-50'
 }
 
+function getStatusPillClass(status) {
+  if (status === 'approved') return 'bg-emerald-100 text-emerald-950'
+  if (status === 'declined' || status === 'cancelled') return 'bg-red-100 text-red-800'
+  if (status === 'completed') return 'bg-stone-200 text-stone-800'
+  return 'bg-amber-100 text-amber-900'
+}
+
+function getRoomLabel(reservation, rooms) {
+  const roomIndex = rooms.findIndex((room) => String(room._id) === String(reservation.roomId))
+  return roomIndex >= 0 ? `R${roomIndex + 1}` : reservation.roomName || 'Room'
+}
+
+function getRoomStaysForDate(date, reservations) {
+  return reservations
+    .filter((reservation) => activeStatuses.includes(reservation.status || 'pending') && date >= reservation.checkIn && date < reservation.checkOut)
+    .sort((first, second) => {
+      const firstStatus = first.status === 'approved' ? 0 : 1
+      const secondStatus = second.status === 'approved' ? 0 : 1
+      return firstStatus - secondStatus || String(first.roomName || '').localeCompare(String(second.roomName || ''))
+    })
+}
+
 function getRoomStayForDate(room, date, reservations) {
-  return reservations.find((reservation) => (
-    String(reservation.roomId) === String(room._id)
-    && activeStatuses.includes(reservation.status || 'pending')
-    && date >= reservation.checkIn
-    && date < reservation.checkOut
-  ))
+  return reservations
+    .filter((reservation) => (
+      String(reservation.roomId) === String(room._id)
+      && activeStatuses.includes(reservation.status || 'pending')
+      && date >= reservation.checkIn
+      && date < reservation.checkOut
+    ))
+    .sort((first, second) => {
+      const firstStatus = first.status === 'approved' ? 0 : 1
+      const secondStatus = second.status === 'approved' ? 0 : 1
+      return firstStatus - secondStatus
+    })[0]
 }
 
 function datesOverlapApprovedStay(roomId, checkIn, checkOut, reservations) {
@@ -586,6 +748,12 @@ function dayMeta(date, inMonth) {
 
 function todayKey() {
   return toDateKey(new Date())
+}
+
+function nextDateKey(key) {
+  const date = parseDateKey(key)
+  date.setDate(date.getDate() + 1)
+  return toDateKey(date)
 }
 
 function toDateKey(date) {
