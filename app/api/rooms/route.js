@@ -5,6 +5,7 @@ import { createMongoClient, getRestaurantDb } from '../../lib/mongodb'
 export const dynamic = 'force-dynamic'
 
 const editableRoomFields = [
+  'roomNumber',
   'name',
   'description',
   'capacity',

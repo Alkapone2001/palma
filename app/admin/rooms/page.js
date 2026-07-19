@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { ArrowLeft, ImageOff, ImagePlus, Pencil, Plus, Save, Trash2, Upload, UsersRound, X } from 'lucide-react'
 
 const emptyRoom = {
+  roomNumber: '',
   name: '',
   description: '',
   capacity: 8,
@@ -237,6 +238,10 @@ export default function Rooms() {
           </div>
           <div className="mt-6 grid gap-5 md:grid-cols-2">
             <label>
+              <span className="mb-2 block text-sm font-semibold text-stone-800">Room number</span>
+              <input name="roomNumber" value={newRoom.roomNumber} onChange={handleChange} className="field-input" placeholder="101" />
+            </label>
+            <label>
               <span className="mb-2 block text-sm font-semibold text-stone-800">Room name</span>
               <input name="name" value={newRoom.name} onChange={handleChange} required className="field-input" placeholder="Garden Room" />
             </label>
@@ -396,7 +401,8 @@ function RoomAdminCard({ room, editing, editRoom, saving, onEditChange, uploadin
         </span>
       </div>
       <div className="p-6">
-        <h3 className="text-xl font-semibold text-stone-950">{room.name}</h3>
+        {room.roomNumber && <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">Room {room.roomNumber}</p>}
+        <h3 className={`${room.roomNumber ? 'mt-1' : ''} text-xl font-semibold text-stone-950`}>{room.name}</h3>
         <p className="mt-2 flex items-center gap-2 text-sm text-stone-600">
           <UsersRound className="h-4 w-4 text-emerald-800" />
           Up to {room.capacity} guests
@@ -426,6 +432,10 @@ function RoomAdminCard({ room, editing, editRoom, saving, onEditChange, uploadin
 function RoomFields({ room, onChange, uploading, onImageUpload, onImageClear, onGalleryClear }) {
   return (
     <div className="mt-6 grid gap-5 md:grid-cols-2">
+      <label>
+        <span className="mb-2 block text-sm font-semibold text-stone-800">Room number</span>
+        <input name="roomNumber" value={room.roomNumber} onChange={onChange} className="field-input" placeholder="101" />
+      </label>
       <label>
         <span className="mb-2 block text-sm font-semibold text-stone-800">Room name</span>
         <input name="name" value={room.name} onChange={onChange} required className="field-input" placeholder="Garden Room" />

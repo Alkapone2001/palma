@@ -89,6 +89,8 @@ function buildAdminReservationText(reservation) {
     `Email: ${reservation.email}`,
     `Phone: ${reservation.phone}`,
     `Guests: ${reservation.guests}`,
+    `Source: ${formatEmailOption(reservation.source || 'website')}`,
+    `Payment: ${formatEmailOption(reservation.paymentStatus || 'not-paid')}`,
   ]
 
   if (reservation.type === 'room') {
@@ -175,4 +177,11 @@ function getGuestStatusMessage(status) {
   }
 
   return null
+}
+
+function formatEmailOption(value) {
+  return String(value || '')
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }

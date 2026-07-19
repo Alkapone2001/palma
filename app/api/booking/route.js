@@ -47,6 +47,8 @@ export async function POST(request) {
     const booking = {
       ...body,
       status: canManageRoomCalendar ? body.status || 'pending' : 'pending',
+      paymentStatus: body.paymentStatus || 'not-paid',
+      source: body.source || (canManageRoomCalendar ? 'direct' : 'website'),
       createdAt: body.createdAt || new Date().toISOString(),
     }
 
@@ -106,6 +108,8 @@ export async function PUT(request) {
       'phone',
       'notes',
       'adminNotes',
+      'paymentStatus',
+      'source',
       'status',
     ])
     const allowedUpdateData = isAdmin ? updateData : agencyRoomUpdate

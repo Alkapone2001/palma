@@ -6,6 +6,8 @@ import { ArrowLeft, CalendarDays, CheckCircle2, ChevronLeft, ChevronRight, DoorO
 
 const activeStatuses = ['pending', 'approved']
 const blockedStatuses = ['approved']
+const paymentStatuses = ['not-paid', 'deposit-paid', 'paid', 'pay-on-arrival']
+const bookingSources = ['direct', 'agency', 'website', 'phone', 'walk-in', 'booking.com', 'airbnb', 'whatsapp']
 
 const emptyStaffBooking = {
   roomId: '',
@@ -16,6 +18,8 @@ const emptyStaffBooking = {
   phone: '',
   adults: 1,
   children: 0,
+  paymentStatus: 'not-paid',
+  source: 'direct',
   notes: '',
 }
 
@@ -30,6 +34,8 @@ export default function AdminCalendar() {
   const [message, setMessage] = useState('')
   const [canViewTables, setCanViewTables] = useState(true)
   const [bookingForm, setBookingForm] = useState(emptyStaffBooking)
+  const [selectedReservationId, setSelectedReservationId] = useState('')
+  const [draggedReservationId, setDraggedReservationId] = useState('')
 
   useEffect(() => {
     loadCalendar()
@@ -99,6 +105,7 @@ export default function AdminCalendar() {
   const occupancyRate = rooms.length && occupancyDays.length
     ? Math.round((occupancyDays.reduce((sum, day) => sum + rooms.filter((room) => getRoomStayForDate(room, day.key, approvedRoomReservations)).length, 0) / (rooms.length * occupancyDays.length)) * 100)
     : 0
+  const selectedReservation = roomReservations.find((reservation) => String(reservation._id) === String(selectedReservationId))
 
   function moveMonth(direction) {
     setVisibleMonth((current) => new Date(current.getFullYear(), current.getMonth() + direction, 1))
@@ -146,7 +153,8 @@ export default function AdminCalendar() {
           estimatedTotal: selectedRoom.price ? Number(selectedRoom.price) * manualNights : null,
           notes: bookingForm.notes,
           status: 'approved',
-          source: 'admin',
+          paymentStatus: bookingForm.paymentStatus,
+          source: bookingForm.source,
           createdAt: new Date().toISOString(),
         }),
       })
@@ -166,6 +174,25 @@ export default function AdminCalendar() {
     } finally {
       setSaving(false)
     }
+  }
+
+  async function moveReservation(reservation, room, checkIn) {
+    const nights = calculateNights(reservation.checkIn, reservation.checkOut) || 1
+    const checkOut = addDaysKey(checkIn, nights)
+
+    setSelectedDate(checkIn)
+    await updateReservation(
+      reservation,
+      {
+        roomId: String(room._id),
+        roomName: room.name,
+        checkIn,
+        checkOut,
+        nights,
+        estimatedTotal: room.price ? Number(room.price) * nights : reservation.estimatedTotal || null,
+      },
+      `Moved ${reservation.name} to ${getRoomDisplayName(room)}.`,
+    )
   }
 
   async function updateReservation(reservation, updateData, successMessage = 'Reservation updated.') {
@@ -273,6 +300,7 @@ export default function AdminCalendar() {
                       rooms={rooms}
                       reservations={roomReservations}
                       onSelect={() => setSelectedDate(day.key)}
+                      onOpenBooking={setSelectedReservationId}
                     />
                   ))}
                 </div>
@@ -282,7 +310,7 @@ export default function AdminCalendar() {
                 <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
                   <div>
                     <h2 className="text-2xl font-semibold">Room board</h2>
-                    <p className="mt-1 text-sm text-stone-500">A rolling 28-day view from the selected date.</p>
+                    <p className="mt-1 text-sm text-stone-500">Drag a booking to another room or date to move it. Click a booking to open the drawer.</p>
                   </div>
                   <Legend />
                 </div>
@@ -302,7 +330,17 @@ export default function AdminCalendar() {
                         </button>
                       ))}
                       {rooms.map((room) => (
-                        <RoomRow key={room._id} room={room} days={occupancyDays} reservations={roomReservations} />
+                        <RoomRow
+                          key={room._id}
+                          room={room}
+                          days={occupancyDays}
+                          reservations={roomReservations}
+                          draggedReservationId={draggedReservationId}
+                          onDragStart={setDraggedReservationId}
+                          onDragEnd={() => setDraggedReservationId('')}
+                          onDropBooking={moveReservation}
+                          onOpenBooking={setSelectedReservationId}
+                        />
                       ))}
                     </div>
                   </div>
@@ -334,16 +372,26 @@ export default function AdminCalendar() {
                 saving={saving}
                 onUpdate={updateReservation}
                 onBookRoom={startBookingForRoom}
+                onOpenBooking={setSelectedReservationId}
               />
             </aside>
           </div>
         )}
       </section>
+      {selectedReservation && (
+        <BookingDrawer
+          reservation={selectedReservation}
+          rooms={rooms}
+          saving={saving}
+          onClose={() => setSelectedReservationId('')}
+          onUpdate={(updateData, successMessage) => updateReservation(selectedReservation, updateData, successMessage)}
+        />
+      )}
     </main>
   )
 }
 
-function MonthDayButton({ day, selected, rooms, reservations, onSelect }) {
+function MonthDayButton({ day, selected, rooms, reservations, onSelect, onOpenBooking }) {
   const stays = day.inMonth ? getRoomStaysForDate(day.key, reservations) : []
   const approvedCount = stays.filter((stay) => (stay.status || 'pending') === 'approved').length
   const pendingCount = stays.filter((stay) => (stay.status || 'pending') === 'pending').length
@@ -370,7 +418,23 @@ function MonthDayButton({ day, selected, rooms, reservations, onSelect }) {
             <span className="rounded-lg bg-stone-100 px-2 py-1 text-center text-xs font-semibold text-stone-500">Free</span>
           ) : (
             stays.slice(0, 3).map((stay) => (
-              <span key={stay._id} className={`truncate rounded-md px-2 py-1 text-[10px] font-semibold ${getStatusPillClass(stay.status || 'pending')}`}>
+              <span
+                key={stay._id}
+                role="button"
+                tabIndex={0}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  onOpenBooking(stay._id)
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    event.stopPropagation()
+                    onOpenBooking(stay._id)
+                  }
+                }}
+                className={`truncate rounded-md px-2 py-1 text-[10px] font-semibold ${getStatusPillClass(stay.status || 'pending')}`}
+              >
                 {getRoomLabel(stay, rooms)} {stay.status === 'approved' ? 'confirmed' : 'pending'}
               </span>
             ))
@@ -387,29 +451,54 @@ function MonthDayButton({ day, selected, rooms, reservations, onSelect }) {
   )
 }
 
-function RoomRow({ room, days, reservations }) {
+function RoomRow({ room, days, reservations, draggedReservationId, onDragStart, onDragEnd, onDropBooking, onOpenBooking }) {
   return (
     <>
       <div className="sticky left-0 z-10 flex items-center rounded-lg bg-white px-3 py-3 text-sm font-semibold shadow-sm">
-        <span className="truncate">{room.name}</span>
+        <span className="truncate">{getRoomDisplayName(room)}</span>
       </div>
       {days.map((day) => {
         const booking = getRoomStayForDate(room, day.key, reservations)
         const status = booking?.status || ''
         const isArrival = booking?.checkIn === day.key
         const isDeparture = booking?.checkOut === day.key
+        const isMoveTarget = draggedReservationId && (!booking || String(booking._id) === String(draggedReservationId))
 
         return (
           <div
             key={`${room._id}-${day.key}`}
             title={booking ? `${booking.name}: ${booking.checkIn} to ${booking.checkOut}` : 'Available'}
-            className={`min-h-12 rounded-lg border p-1 ${getOccupancyClass(status, day.isWeekend)}`}
+            onDragOver={(event) => {
+              if (draggedReservationId) event.preventDefault()
+            }}
+            onDrop={(event) => {
+              event.preventDefault()
+              const reservationId = event.dataTransfer.getData('text/plain') || draggedReservationId
+              const draggedReservation = reservations.find((reservation) => String(reservation._id) === String(reservationId))
+
+              if (draggedReservation) {
+                onDropBooking(draggedReservation, room, day.key)
+              }
+
+              onDragEnd()
+            }}
+            className={`min-h-12 rounded-lg border p-1 transition ${getOccupancyClass(status, day.isWeekend)} ${isMoveTarget ? 'ring-2 ring-emerald-300' : ''}`}
           >
             {booking && (
-              <span className="block truncate py-3 text-center text-[10px] font-semibold">
+              <button
+                type="button"
+                draggable
+                onClick={() => onOpenBooking(booking._id)}
+                onDragStart={(event) => {
+                  event.dataTransfer.setData('text/plain', String(booking._id))
+                  onDragStart(String(booking._id))
+                }}
+                onDragEnd={onDragEnd}
+                className="block w-full truncate rounded-md py-3 text-center text-[10px] font-semibold"
+              >
                 {isArrival ? 'In ' : isDeparture ? 'Out ' : ''}
                 {booking.name}
-              </span>
+              </button>
             )}
           </div>
         )
@@ -439,7 +528,7 @@ function StaffBookingForm({ rooms, form, selectedRoom, nights, guests, conflict,
           <select name="roomId" value={form.roomId} onChange={onChange} required className="mt-2 block w-full rounded-xl border border-stone-200 bg-white px-3 py-3 text-sm outline-none focus:border-emerald-900">
             <option value="">Choose room</option>
             {rooms.map((room) => (
-              <option key={room._id} value={room._id}>{room.name} - up to {room.capacity} guests</option>
+              <option key={room._id} value={room._id}>{getRoomDisplayName(room)} - up to {room.capacity} guests</option>
             ))}
           </select>
         </label>
@@ -465,6 +554,18 @@ function StaffBookingForm({ rooms, form, selectedRoom, nights, guests, conflict,
           <Field icon={Phone} label="Phone">
             <input type="tel" name="phone" value={form.phone} onChange={onChange} required className="field-input" placeholder="+385 ..." />
           </Field>
+          <label>
+            <span className="mb-2 block text-sm font-semibold text-stone-800">Payment</span>
+            <select name="paymentStatus" value={form.paymentStatus} onChange={onChange} className="field-input">
+              {paymentStatuses.map((status) => <option key={status} value={status}>{formatOption(status)}</option>)}
+            </select>
+          </label>
+          <label>
+            <span className="mb-2 block text-sm font-semibold text-stone-800">Source</span>
+            <select name="source" value={form.source} onChange={onChange} className="field-input">
+              {bookingSources.map((source) => <option key={source} value={source}>{formatOption(source)}</option>)}
+            </select>
+          </label>
         </div>
         <label className="block text-sm font-semibold text-stone-800">
           Staff notes
@@ -490,7 +591,7 @@ function StaffBookingForm({ rooms, form, selectedRoom, nights, guests, conflict,
   )
 }
 
-function DayPanel({ selectedDate, rooms, roomReservations, tableReservations, availableRooms, canViewTables, saving, onUpdate, onBookRoom }) {
+function DayPanel({ selectedDate, rooms, roomReservations, tableReservations, availableRooms, canViewTables, saving, onUpdate, onBookRoom, onOpenBooking }) {
   return (
     <section className="rounded-[1.5rem] border border-stone-200 bg-white p-5 shadow-xl shadow-stone-200/60">
       <h2 className="text-2xl font-semibold">{formatLongDate(selectedDate)}</h2>
@@ -509,6 +610,7 @@ function DayPanel({ selectedDate, rooms, roomReservations, tableReservations, av
                   rooms={rooms}
                   saving={saving}
                   onUpdate={onUpdate}
+                  onOpenBooking={onOpenBooking}
                 />
               ))
             )}
@@ -527,7 +629,7 @@ function DayPanel({ selectedDate, rooms, roomReservations, tableReservations, av
                   onClick={() => onBookRoom(room, selectedDate)}
                   className="rounded-2xl border border-stone-100 bg-white p-3 text-left text-sm transition hover:border-emerald-200 hover:bg-emerald-50"
                 >
-                  <span className="block font-semibold text-stone-950">{room.name}</span>
+                  <span className="block font-semibold text-stone-950">{getRoomDisplayName(room)}</span>
                   <span className="mt-1 block text-xs text-stone-500">Up to {room.capacity || 1} guests</span>
                 </button>
               ))
@@ -556,7 +658,131 @@ function DayPanel({ selectedDate, rooms, roomReservations, tableReservations, av
   )
 }
 
-function ReservationLine({ reservation, selectedDate, rooms, saving, onUpdate }) {
+function BookingDrawer({ reservation, rooms, saving, onClose, onUpdate }) {
+  const [draft, setDraft] = useState(() => reservationToDraft(reservation))
+  const selectedRoom = rooms.find((room) => String(room._id) === String(draft.roomId))
+  const nights = calculateNights(draft.checkIn, draft.checkOut)
+  const guests = Number(draft.adults || 0) + Number(draft.children || 0)
+  const estimate = selectedRoom?.price && nights > 0 ? Number(selectedRoom.price) * nights : null
+
+  useEffect(() => {
+    setDraft(reservationToDraft(reservation))
+  }, [reservation])
+
+  function updateDraft(event) {
+    const { name, value } = event.target
+    setDraft((current) => ({ ...current, [name]: value }))
+  }
+
+  async function saveChanges() {
+    const room = rooms.find((item) => String(item._id) === String(draft.roomId))
+
+    await onUpdate({
+      ...draft,
+      roomId: String(draft.roomId),
+      roomName: room?.name || draft.roomName,
+      adults: Number(draft.adults || 0),
+      children: Number(draft.children || 0),
+      guests,
+      nights,
+      estimatedTotal: estimate || reservation.estimatedTotal || null,
+    }, 'Booking drawer changes saved.')
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 bg-stone-950/35">
+      <div className="absolute inset-y-0 right-0 flex w-full max-w-xl flex-col bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-4 border-b border-stone-200 p-5">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-800">Booking details</p>
+            <h2 className="mt-2 text-2xl font-semibold text-stone-950">{reservation.name}</h2>
+            <p className="mt-1 text-sm text-stone-500">{reservation.checkIn} to {reservation.checkOut}</p>
+          </div>
+          <button type="button" onClick={onClose} className="flex h-10 w-10 items-center justify-center rounded-full border border-stone-200 text-stone-600 hover:bg-stone-50" aria-label="Close booking drawer">
+            <XCircle className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <DrawerField label="Room">
+              <select name="roomId" value={draft.roomId} onChange={updateDraft} className="field-input">
+                {rooms.map((room) => <option key={room._id} value={room._id}>{getRoomDisplayName(room)}</option>)}
+              </select>
+            </DrawerField>
+            <DrawerField label="Status">
+              <select name="status" value={draft.status} onChange={updateDraft} className="field-input">
+                {['pending', 'approved', 'declined', 'cancelled', 'completed', 'no-show'].map((status) => <option key={status} value={status}>{formatOption(status)}</option>)}
+              </select>
+            </DrawerField>
+            <DrawerField label="Check-in">
+              <input type="date" name="checkIn" value={draft.checkIn} onChange={updateDraft} className="field-input" />
+            </DrawerField>
+            <DrawerField label="Check-out">
+              <input type="date" name="checkOut" value={draft.checkOut} min={draft.checkIn || undefined} onChange={updateDraft} className="field-input" />
+            </DrawerField>
+            <DrawerField label="Guest name">
+              <input name="name" value={draft.name} onChange={updateDraft} className="field-input" />
+            </DrawerField>
+            <DrawerField label="Email">
+              <input type="email" name="email" value={draft.email} onChange={updateDraft} className="field-input" />
+            </DrawerField>
+            <DrawerField label="Phone">
+              <input name="phone" value={draft.phone} onChange={updateDraft} className="field-input" />
+            </DrawerField>
+            <DrawerField label="Adults">
+              <input type="number" name="adults" value={draft.adults} min="1" onChange={updateDraft} className="field-input" />
+            </DrawerField>
+            <DrawerField label="Children">
+              <input type="number" name="children" value={draft.children} min="0" onChange={updateDraft} className="field-input" />
+            </DrawerField>
+            <DrawerField label="Payment">
+              <select name="paymentStatus" value={draft.paymentStatus} onChange={updateDraft} className="field-input">
+                {paymentStatuses.map((status) => <option key={status} value={status}>{formatOption(status)}</option>)}
+              </select>
+            </DrawerField>
+            <DrawerField label="Source">
+              <select name="source" value={draft.source} onChange={updateDraft} className="field-input">
+                {bookingSources.map((source) => <option key={source} value={source}>{formatOption(source)}</option>)}
+              </select>
+            </DrawerField>
+          </div>
+
+          <DrawerField label="Notes">
+            <textarea name="notes" value={draft.notes} onChange={updateDraft} rows="4" className="field-input resize-none" />
+          </DrawerField>
+
+          <div className="mt-5 grid gap-3 rounded-2xl bg-stone-50 p-4 text-sm sm:grid-cols-3">
+            <Summary label="Nights" value={nights > 0 ? nights : 'Invalid'} />
+            <Summary label="Guests" value={guests || 'Missing'} />
+            <Summary label="Estimate" value={estimate ? `EUR ${estimate.toLocaleString()}` : 'No price'} />
+          </div>
+        </div>
+
+        <div className="border-t border-stone-200 p-5">
+          <div className="flex flex-wrap gap-2">
+            <button type="button" onClick={saveChanges} disabled={saving || nights <= 0 || guests <= 0} className="rounded-full bg-emerald-900 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
+              {saving ? 'Saving...' : 'Save booking'}
+            </button>
+            <button type="button" onClick={() => onUpdate({ status: 'approved' }, 'Room request approved.')} disabled={saving || reservation.status === 'approved'} className="rounded-full border border-stone-200 px-5 py-3 text-sm font-semibold text-stone-700 hover:bg-stone-50 disabled:cursor-not-allowed disabled:opacity-50">Approve</button>
+            <button type="button" onClick={() => onUpdate({ status: 'declined' }, 'Room request declined.')} disabled={saving || reservation.status === 'declined'} className="rounded-full border border-red-100 px-5 py-3 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50">Decline</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function DrawerField({ label, children }) {
+  return (
+    <label className="mt-4 block text-sm font-semibold text-stone-800">
+      {label}
+      <div className="mt-2">{children}</div>
+    </label>
+  )
+}
+
+function ReservationLine({ reservation, selectedDate, rooms, saving, onUpdate, onOpenBooking }) {
   const status = reservation.status || 'pending'
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(() => reservationToDraft(reservation))
@@ -604,6 +830,7 @@ function ReservationLine({ reservation, selectedDate, rooms, saving, onUpdate })
           {(reservation.email || reservation.phone) && (
             <p className="mt-1 text-xs text-stone-500">{reservation.email || 'No email'} / {reservation.phone || 'No phone'}</p>
           )}
+          <p className="mt-1 text-xs font-semibold text-stone-500">{formatOption(reservation.paymentStatus || 'not-paid')} / {formatOption(reservation.source || 'website')}</p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase ${getStatusPillClass(status)}`}>
           {status}
@@ -617,7 +844,7 @@ function ReservationLine({ reservation, selectedDate, rooms, saving, onUpdate })
               Room
               <select name="roomId" value={draft.roomId} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900">
                 {rooms.map((room) => (
-                  <option key={room._id} value={room._id}>{room.name}</option>
+                  <option key={room._id} value={room._id}>{getRoomDisplayName(room)}</option>
                 ))}
               </select>
             </label>
@@ -654,6 +881,18 @@ function ReservationLine({ reservation, selectedDate, rooms, saving, onUpdate })
             <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
               Children
               <input type="number" name="children" value={draft.children} min="0" onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900" />
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Payment
+              <select name="paymentStatus" value={draft.paymentStatus} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900">
+                {paymentStatuses.map((item) => <option key={item} value={item}>{formatOption(item)}</option>)}
+              </select>
+            </label>
+            <label className="block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
+              Source
+              <select name="source" value={draft.source} onChange={updateDraft} className="mt-1 block w-full rounded-xl border border-stone-200 px-3 py-2 text-sm normal-case tracking-normal text-stone-800 outline-none focus:border-emerald-900">
+                {bookingSources.map((item) => <option key={item} value={item}>{formatOption(item)}</option>)}
+              </select>
             </label>
           </div>
           <label className="mt-3 block text-xs font-semibold uppercase tracking-[0.14em] text-stone-500">
@@ -705,6 +944,13 @@ function ReservationLine({ reservation, selectedDate, rooms, saving, onUpdate })
           className="rounded-full border border-stone-200 px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-white"
         >
           {editing ? 'Hide edit' : 'Edit booking'}
+        </button>
+        <button
+          type="button"
+          onClick={() => onOpenBooking(reservation._id)}
+          className="rounded-full border border-stone-200 bg-white px-3 py-2 text-xs font-semibold text-stone-700 transition hover:bg-stone-50"
+        >
+          Open drawer
         </button>
       </div>
     </div>
@@ -777,13 +1023,26 @@ function reservationToDraft(reservation) {
     adults: reservation.adults || reservation.guests || 1,
     children: reservation.children || 0,
     notes: reservation.notes || '',
+    paymentStatus: reservation.paymentStatus || 'not-paid',
+    source: reservation.source || 'website',
     status: reservation.status || 'pending',
   }
 }
 
 function getRoomLabel(reservation, rooms) {
-  const roomIndex = rooms.findIndex((room) => String(room._id) === String(reservation.roomId))
-  return roomIndex >= 0 ? `R${roomIndex + 1}` : reservation.roomName || 'Room'
+  const room = rooms.find((item) => String(item._id) === String(reservation.roomId))
+  return room?.roomNumber ? `R${room.roomNumber}` : reservation.roomName || 'Room'
+}
+
+function getRoomDisplayName(room) {
+  return room?.roomNumber ? `Room ${room.roomNumber} - ${room.name}` : room?.name || 'Room'
+}
+
+function formatOption(value) {
+  return String(value || '')
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }
 
 function getRoomStaysForDate(date, reservations) {
@@ -871,8 +1130,12 @@ function todayKey() {
 }
 
 function nextDateKey(key) {
+  return addDaysKey(key, 1)
+}
+
+function addDaysKey(key, days) {
   const date = parseDateKey(key)
-  date.setDate(date.getDate() + 1)
+  date.setDate(date.getDate() + days)
   return toDateKey(date)
 }
 
