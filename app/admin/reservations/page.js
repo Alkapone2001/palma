@@ -66,8 +66,7 @@ export default function Reservations() {
             Admin Dashboard
           </Link>
           <div className="flex items-center gap-4">
-            <Link href="/admin/calendar" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Calendar</Link>
-            <Link href="/" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Back to Site</Link>
+            <Link href="/admin/calendar" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Room Calendar</Link>
           </div>
         </div>
       </header>

@@ -72,8 +72,8 @@ export default function Admin() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Link href="/" className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50">
-              Back to Site
+            <Link href="/admin/calendar" className="rounded-full border border-stone-200 px-4 py-2 text-sm font-semibold text-stone-700 transition hover:bg-stone-50">
+              Room Calendar
             </Link>
             <button onClick={handleLogout} className="rounded-full bg-stone-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-stone-800">
               Sign out

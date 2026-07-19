@@ -217,7 +217,7 @@ export default function Rooms() {
             <ArrowLeft className="h-4 w-4" />
             Admin Dashboard
           </Link>
-          <Link href="/" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Back to Site</Link>
+          <Link href="/admin/calendar" className="text-sm font-semibold text-stone-700 hover:text-emerald-900">Room Calendar</Link>
         </div>
       </header>
 
