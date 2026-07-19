@@ -118,7 +118,7 @@ export default function Admin() {
             <div className="mt-6 space-y-3">
               <AdminAction href="/admin/rooms" icon={DoorOpen} title="Manage hotel rooms" text="Add photos, nightly prices, bed details, and availability." />
               <AdminAction href="/admin/tables" icon={Table2} title="Manage tables" text="Add or remove dining tables and capacities." />
-              <AdminAction href="/admin/calendar" icon={CalendarClock} title="Calendar" text="See room occupancy and restaurant reservations by date." />
+              <AdminAction href="/admin/calendar" icon={CalendarClock} title="Room booking calendar" text="See room occupancy, daily squares, and add direct room bookings." />
               <AdminAction href="/admin/reservations" icon={CalendarClock} title="Reservations" text="Approve, assign tables, and update guest requests." />
             </div>
           </div>

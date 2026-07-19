@@ -36,6 +36,7 @@ export async function POST(request) {
 
   try {
     const body = await request.json()
+    const isAdmin = isAdminRequest(request)
     const validationError = validateBooking(body)
 
     if (validationError) {
@@ -44,7 +45,7 @@ export async function POST(request) {
 
     const booking = {
       ...body,
-      status: body.status || 'pending',
+      status: isAdmin ? body.status || 'pending' : 'pending',
       createdAt: body.createdAt || new Date().toISOString(),
     }
 
